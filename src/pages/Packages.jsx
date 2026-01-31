@@ -85,7 +85,7 @@ export default function Packages() {
         <div className="relative z-10 max-w-7xl mx-auto text-center">
           <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tighter">
             CHOOSE YOUR<br />
-            <span className="text-red-600">PACKAGE</span>
+            <span className="text-green-600">PACKAGE</span>
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Premium oceanfront suites with all-inclusive amenities. Every package includes full access to retreat events and experiences.
@@ -104,8 +104,8 @@ export default function Packages() {
               transition={{ delay: idx * 0.1 }}
             >
               <Card className={`overflow-hidden ${
-                pkg.premium ? 'border-2 border-red-600 bg-gradient-to-br from-zinc-900 to-red-950/20' : 
-                pkg.featured ? 'border-2 border-red-500/50 bg-zinc-900' : 
+                pkg.premium ? 'border-2 border-green-600 bg-gradient-to-br from-zinc-900 to-green-950/20' : 
+                pkg.featured ? 'border-2 border-yellow-400/50 bg-zinc-900' : 
                 'border border-zinc-800 bg-zinc-900'
               }`}>
                 <CardHeader className={pkg.premium ? 'bg-red-600/10' : ''}>
@@ -114,12 +114,12 @@ export default function Packages() {
                       <div className="flex items-center gap-3 mb-2">
                         <CardTitle className="text-white text-3xl font-black uppercase">{pkg.name}</CardTitle>
                         {pkg.premium && (
-                          <span className="bg-red-600 text-white text-xs font-black px-3 py-1 rounded uppercase">
+                          <span className="bg-green-600 text-white text-xs font-black px-3 py-1 rounded uppercase">
                             Premium
                           </span>
                         )}
                         {pkg.featured && (
-                          <span className="bg-yellow-500 text-black text-xs font-black px-3 py-1 rounded uppercase">
+                          <span className="bg-yellow-400 text-black text-xs font-black px-3 py-1 rounded uppercase">
                             Popular
                           </span>
                         )}
@@ -136,7 +136,7 @@ export default function Packages() {
                       <ul className="space-y-3">
                         {pkg.features.map((feature, i) => (
                           <li key={i} className="flex items-start gap-3 text-gray-300">
-                            <Check className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                            <Check className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                             <span>{feature}</span>
                           </li>
                         ))}
@@ -150,7 +150,7 @@ export default function Packages() {
                         {pkg.pricing.map((price, i) => (
                           <div key={i} className="flex items-center justify-between bg-black/50 p-4 rounded-lg border border-zinc-800">
                             <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-red-500" />
+                              <Users className="w-4 h-4 text-yellow-400" />
                               <span className="text-gray-300 font-medium">{price.occupancy}</span>
                             </div>
                             <span className="text-white font-black text-xl">${price.price.toLocaleString()}</span>
@@ -163,7 +163,7 @@ export default function Packages() {
                   <div className="mt-6 pt-6 border-t border-zinc-800">
                     <Link to={createPageUrl('Contact')}>
                       <Button className={`w-full font-black py-6 text-lg uppercase tracking-wide ${
-                        pkg.premium ? 'bg-red-600 hover:bg-red-700' : 'bg-zinc-800 hover:bg-zinc-700'
+                        pkg.premium ? 'bg-green-600 hover:bg-green-700' : 'bg-zinc-800 hover:bg-zinc-700'
                       } text-white`}>
                         Select This Package
                       </Button>
@@ -180,13 +180,13 @@ export default function Packages() {
       <section className="px-6 py-20 bg-black">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
-            SECURE YOUR <span className="text-red-600">SPOT</span>
+            SECURE YOUR <span className="text-yellow-400">SPOT</span>
           </h2>
           <p className="text-xl text-gray-300 mb-8">
-            Don't miss out on the experience of a lifetime. Register now for Urban Escapes Retreat 2026.
+            Don't miss out on the experience of a lifetime. Register now for Lost in Jamaica 2026.
           </p>
           <Link to={createPageUrl('Contact')}>
-            <Button className="bg-red-600 hover:bg-red-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-red-600/50">
+            <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50">
               Book Now
             </Button>
           </Link>

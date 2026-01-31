@@ -48,7 +48,7 @@ export default function Contact() {
         <div className="text-center mb-16">
           <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tighter">
             BOOK YOUR<br />
-            <span className="text-red-600">SPOT</span>
+            <span className="text-green-600">SPOT</span>
           </h1>
           <p className="text-xl text-gray-300">
             Registration for 2026 is now open. Secure your spot before we sell out.
@@ -57,7 +57,7 @@ export default function Contact() {
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Contact Form */}
-          <Card className="bg-zinc-900 border-red-600/30 shadow-2xl">
+          <Card className="bg-zinc-900 border-green-600/30 shadow-2xl">
             <CardHeader className="border-b border-zinc-800">
               <CardTitle className="text-white text-3xl font-black uppercase">Registration Form</CardTitle>
             </CardHeader>
@@ -70,7 +70,7 @@ export default function Contact() {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
-                    className="bg-black border-zinc-800 text-white placeholder:text-gray-600 focus:border-red-600"
+                    className="bg-black border-zinc-800 text-white placeholder:text-gray-600 focus:border-green-600"
                     placeholder="Your name"
                   />
                 </div>
@@ -83,7 +83,7 @@ export default function Contact() {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     required
-                    className="bg-black border-zinc-800 text-white placeholder:text-gray-600 focus:border-red-600"
+                    className="bg-black border-zinc-800 text-white placeholder:text-gray-600 focus:border-green-600"
                     placeholder="your.email@example.com"
                   />
                 </div>
@@ -95,7 +95,7 @@ export default function Contact() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="bg-black border-zinc-800 text-white placeholder:text-gray-600 focus:border-red-600"
+                    className="bg-black border-zinc-800 text-white placeholder:text-gray-600 focus:border-green-600"
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
@@ -155,7 +155,7 @@ export default function Contact() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-6 text-lg uppercase tracking-wide shadow-xl"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-6 text-lg uppercase tracking-wide shadow-xl"
                 >
                   {isSubmitting ? 'Submitting...' : (
                     <>
@@ -170,50 +170,50 @@ export default function Contact() {
 
           {/* Contact Info */}
           <div className="space-y-6">
-            <Card className="bg-zinc-900 border-red-600/30 shadow-2xl">
+            <Card className="bg-zinc-900 border-green-600/30 shadow-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-red-600 p-3 rounded-lg">
+                  <div className="bg-green-600 p-3 rounded-lg">
                     <Mail className="w-6 h-6 text-white" />
                   </div>
                   <div className="text-white">
                     <h3 className="font-black text-lg mb-1 uppercase">Email</h3>
-                    <p className="text-gray-400">info@urbanescapes.com</p>
+                    <p className="text-gray-400">info@lostinjamaica.com</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900 border-red-600/30 shadow-2xl">
+            <Card className="bg-zinc-900 border-green-600/30 shadow-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-red-600 p-3 rounded-lg">
+                  <div className="bg-green-600 p-3 rounded-lg">
                     <Phone className="w-6 h-6 text-white" />
                   </div>
                   <div className="text-white">
                     <h3 className="font-black text-lg mb-1 uppercase">Phone</h3>
-                    <p className="text-gray-400">+1 (646) 555-ESCAPE</p>
+                    <p className="text-gray-400">+1 (876) 555-0123</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900 border-red-600/30 shadow-2xl">
+            <Card className="bg-zinc-900 border-green-600/30 shadow-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-red-600 p-3 rounded-lg">
+                  <div className="bg-green-600 p-3 rounded-lg">
                     <Instagram className="w-6 h-6 text-white" />
                   </div>
                   <div className="text-white">
                     <h3 className="font-black text-lg mb-1 uppercase">Social</h3>
-                    <p className="text-gray-400">@urbanescapes</p>
+                    <p className="text-gray-400">@lostinjamaica</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Important Info */}
-            <Card className="bg-gradient-to-br from-red-600 to-red-700 border-red-800 shadow-2xl">
+            <Card className="bg-gradient-to-br from-green-600 to-green-700 border-green-800 shadow-2xl">
               <CardContent className="pt-6">
                 <h3 className="font-black text-2xl text-white mb-3 uppercase">Limited Spots</h3>
                 <p className="text-white/90 mb-4">
@@ -222,7 +222,7 @@ export default function Contact() {
                 <ul className="space-y-2 text-white text-sm font-medium">
                   <li>✓ Payment plans available</li>
                   <li>✓ Group rates for 4+ guests</li>
-                  <li>✓ NYC & ATL departure options</li>
+                  <li>✓ Direct flights from major cities</li>
                 </ul>
               </CardContent>
             </Card>

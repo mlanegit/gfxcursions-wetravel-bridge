@@ -82,7 +82,7 @@ export default function Events() {
       <section className="relative py-32 px-6 bg-gradient-to-b from-red-600/20 to-black">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tighter">
-            THE <span className="text-red-600">EXPERIENCE</span>
+            THE <span className="text-yellow-400">EXPERIENCE</span>
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             5 days of curated events, celebrity entertainment, wellness sessions, and unforgettable moments
@@ -100,11 +100,11 @@ export default function Events() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.15 }}
             >
-              <Card className="bg-black border-red-600/30 overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-red-600 to-red-700">
+              <Card className="bg-black border-green-600/30 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-green-600 to-green-700">
                   <div className="flex items-center gap-4">
                     <div className="bg-white p-3 rounded-lg">
-                      <event.icon className="w-8 h-8 text-red-600" />
+                      <event.icon className="w-8 h-8 text-green-600" />
                     </div>
                     <div>
                       <p className="text-white/80 font-bold text-sm uppercase tracking-wider">{event.day}</p>
@@ -116,7 +116,7 @@ export default function Events() {
                   <div className="space-y-4">
                     {event.activities.map((activity, i) => (
                       <div key={i} className="flex items-center gap-4 pb-4 border-b border-zinc-800 last:border-0">
-                        <div className="bg-zinc-900 px-4 py-2 rounded font-bold text-red-500 text-sm min-w-[100px] text-center border border-zinc-800">
+                        <div className="bg-zinc-900 px-4 py-2 rounded font-bold text-yellow-400 text-sm min-w-[100px] text-center border border-zinc-800">
                           {activity.time}
                         </div>
                         <div className="flex-1">
@@ -139,7 +139,7 @@ export default function Events() {
       <section className="px-6 py-20 bg-black">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black text-white text-center mb-12 tracking-tight">
-            EVENT <span className="text-red-600">HIGHLIGHTS</span>
+            EVENT <span className="text-yellow-400">HIGHLIGHTS</span>
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
@@ -150,9 +150,9 @@ export default function Events() {
               { title: 'All White Party', desc: 'VIP gala with special guest performers', icon: Moon },
               { title: 'Beach Sessions', desc: 'Daily beach parties and activities', icon: Sunset },
             ].map((highlight, idx) => (
-              <Card key={idx} className="bg-zinc-900 border-red-600/30 hover:border-red-600 transition-all group">
+              <Card key={idx} className="bg-zinc-900 border-green-600/30 hover:border-green-600 transition-all group">
                 <CardContent className="pt-8 pb-6 text-center">
-                  <div className="bg-red-600 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <div className="bg-green-600 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                     <highlight.icon className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-white font-black text-xl mb-2 uppercase">{highlight.title}</h3>

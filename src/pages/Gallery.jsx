@@ -70,10 +70,10 @@ export default function Gallery() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-6xl md:text-8xl font-black text-white mb-6 tracking-tighter">
-            THE <span className="text-red-600">GALLERY</span>
+            THE <span className="text-yellow-400">GALLERY</span>
           </h1>
           <p className="text-xl text-gray-300">
-            Relive the moments from previous retreats
+            Relive the moments from Lost in Jamaica retreats
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function Gallery() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
                 <div className="text-white">
-                  <p className="text-sm text-red-500 font-black mb-1 uppercase tracking-wide">{image.category}</p>
+                  <p className="text-sm text-yellow-400 font-black mb-1 uppercase tracking-wide">{image.category}</p>
                   <h3 className="text-2xl font-black uppercase">{image.title}</h3>
                 </div>
               </div>
@@ -103,15 +103,15 @@ export default function Gallery() {
         </div>
 
         {/* Social Banner */}
-        <div className="mt-20 bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-12 text-center">
+        <div className="mt-20 bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-12 text-center">
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight uppercase">
             Share The Vibe
           </h2>
           <p className="text-xl text-white/90 mb-6">
-            Tag us in your photos @urbanescapes for a chance to be featured
+            Tag us in your photos @lostinjamaica for a chance to be featured
           </p>
-          <div className="inline-block bg-black text-red-500 font-black px-10 py-4 rounded text-2xl tracking-wider uppercase">
-            #UrbanEscapes2026
+          <div className="inline-block bg-black text-yellow-400 font-black px-10 py-4 rounded text-2xl tracking-wider uppercase">
+            #LostInJamaica2026
           </div>
         </div>
       </div>

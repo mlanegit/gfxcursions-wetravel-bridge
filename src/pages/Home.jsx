@@ -38,17 +38,17 @@ export default function Home() {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-7xl md:text-9xl font-black text-white mb-4 tracking-tighter">
-              URBAN<br />
-              <span className="text-red-600">ESCAPES</span>
+              LOST IN<br />
+              <span className="text-green-600">JAMAICA</span>
             </h1>
-            <p className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-wide">
+            <p className="text-2xl md:text-3xl font-bold text-yellow-400 mb-3 tracking-wide">
               RETREAT 2026
             </p>
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Where NYC meets ATL in Paradise
+              Presented by GFX
             </p>
             <Link to={createPageUrl('Contact')}>
-              <Button className="bg-red-600 hover:bg-red-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-red-600/50 transition-all">
+              <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all">
                 Register Now
               </Button>
             </Link>
@@ -64,7 +64,7 @@ export default function Home() {
       </section>
 
       {/* Quick Nav Bar */}
-      <section className="sticky top-16 z-40 bg-red-600 border-y border-red-700">
+      <section className="sticky top-16 z-40 bg-green-600 border-y border-green-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-center gap-8 flex-wrap">
             <a href="#whats-included" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">
@@ -87,7 +87,7 @@ export default function Home() {
       <section id="whats-included" className="px-6 py-20 bg-gradient-to-b from-black to-zinc-900">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-5xl md:text-6xl font-black text-white text-center mb-16 tracking-tight">
-            WHAT'S <span className="text-red-600">INCLUDED</span>
+            WHAT'S <span className="text-yellow-400">INCLUDED</span>
           </h2>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -98,9 +98,9 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
               >
-                <Card className="bg-zinc-900 border-red-600/30 hover:border-red-600 transition-all group">
+                <Card className="bg-zinc-900 border-green-600/30 hover:border-green-600 transition-all group">
                   <CardContent className="pt-8 pb-6 text-center">
-                    <div className="bg-red-600 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <div className="bg-green-600 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                       <item.icon className="w-8 h-8 text-white" />
                     </div>
                     <p className="text-white font-bold text-lg">{item.text}</p>
@@ -111,7 +111,7 @@ export default function Home() {
           </div>
 
           <div className="mt-12 grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            <Card className="bg-red-600 border-red-700">
+            <Card className="bg-green-600 border-green-700">
               <CardContent className="pt-6">
                 <h3 className="text-white font-black text-xl mb-3 uppercase">All-Inclusive</h3>
                 <ul className="text-white space-y-2">
@@ -122,7 +122,7 @@ export default function Home() {
                 </ul>
               </CardContent>
             </Card>
-            <Card className="bg-red-600 border-red-700">
+            <Card className="bg-green-600 border-green-700">
               <CardContent className="pt-6">
                 <h3 className="text-white font-black text-xl mb-3 uppercase">VIP Experience</h3>
                 <ul className="text-white space-y-2">
@@ -169,13 +169,13 @@ export default function Home() {
       <section className="px-6 py-20 bg-gradient-to-b from-zinc-900 to-black">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tight">
-            READY TO <span className="text-red-600">ESCAPE?</span>
+            READY TO GET <span className="text-yellow-400">LOST?</span>
           </h2>
           <p className="text-xl text-gray-300 mb-8">
             Limited spots available. Lock in your spot before it's too late.
           </p>
           <Link to={createPageUrl('Contact')}>
-            <Button className="bg-red-600 hover:bg-red-700 text-white font-black px-16 py-8 text-2xl rounded uppercase tracking-wider shadow-2xl hover:shadow-red-600/50 transition-all">
+            <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-16 py-8 text-2xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all">
               Book Now for 2026
             </Button>
           </Link>
