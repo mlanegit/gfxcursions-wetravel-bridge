@@ -87,11 +87,31 @@ export default function BookingWizard({ onClose }) {
         status: 'pending',
       });
 
+      // Build WeTravel package name to match their format
+      const getWeTravelPackageName = () => {
+        const nightsText = bookingData.nights === '3' ? '3 Nights' : '4 Nights Stay';
+        const occupancyText = bookingData.occupancy === 'single' ? 'Single' : 'Double';
+        
+        if (bookingData.packageType === 'luxury-suite') {
+          return `Luxury Suite ${occupancyText} ${nightsText}`;
+        } else if (bookingData.packageType === 'diamond-club') {
+          return `Luxury Suite ${occupancyText} DC ${bookingData.nights} Nights${bookingData.nights === '4' ? ' Stay' : ''}`;
+        } else if (bookingData.packageType === 'ocean-view-dc') {
+          return `Luxury Ocean View ${occupancyText} DC ${bookingData.nights} Nights`;
+        }
+        return '';
+      };
+
       // Build WeTravel checkout URL with pre-filled info
       const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714');
       wetravelUrl.searchParams.set('email', bookingData.email);
       wetravelUrl.searchParams.set('first_name', bookingData.name.split(' ')[0]);
       wetravelUrl.searchParams.set('last_name', bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0]);
+      if (bookingData.phone) {
+        wetravelUrl.searchParams.set('phone', bookingData.phone);
+      }
+      wetravelUrl.searchParams.set('package_name', getWeTravelPackageName());
+      wetravelUrl.searchParams.set('num_travelers', String(bookingData.guests));
 
       toast.success('Redirecting to payment...');
       
