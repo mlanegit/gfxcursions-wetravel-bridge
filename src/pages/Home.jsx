@@ -16,8 +16,38 @@ export default function Home() {
     { icon: Star, text: 'VIP Wellness Sessions' },
   ];
 
+  const previousTripImages = [
+    'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=400&h=300&fit=crop',
+  ];
+
   return (
     <div className="min-h-screen bg-black">
+      {/* Previous Trips Banner */}
+      <section className="bg-zinc-900 py-8 border-b border-green-600/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <h3 className="text-white font-black text-center mb-4 text-lg uppercase tracking-wide">
+            Previous <span className="text-yellow-400">Lost In</span> Retreats
+          </h3>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+            {previousTripImages.map((img, idx) => (
+              <div key={idx} className="relative overflow-hidden rounded aspect-square group">
+                <img 
+                  src={img} 
+                  alt={`Previous trip ${idx + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image with Overlay */}
