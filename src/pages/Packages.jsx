@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import BookingWizard from '../components/BookingWizard';
 
 export default function Packages() {
+  const [showBookingWizard, setShowBookingWizard] = useState(false);
   const packages = [
     {
       name: 'Luxury Suite - 3 Nights',
@@ -208,13 +210,14 @@ export default function Packages() {
                   </div>
 
                   <div className="mt-6 pt-6 border-t border-zinc-800">
-                    <Link to={createPageUrl('Contact')}>
-                      <Button className={`w-full font-black py-6 text-lg uppercase tracking-wide ${
+                    <Button 
+                      onClick={() => setShowBookingWizard(true)}
+                      className={`w-full font-black py-6 text-lg uppercase tracking-wide ${
                         pkg.premium ? 'bg-green-600 hover:bg-green-700' : 'bg-zinc-800 hover:bg-zinc-700'
-                      } text-white`}>
-                        Select This Package
-                      </Button>
-                    </Link>
+                      } text-white`}
+                    >
+                      Book This Package
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -232,13 +235,19 @@ export default function Packages() {
           <p className="text-xl text-gray-300 mb-8">
             Don't miss out on the experience of a lifetime. Register now for Lost in Jamaica 2026.
           </p>
-          <Link to={createPageUrl('Contact')}>
-            <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50">
-              Book Now
-            </Button>
-          </Link>
+          <Button 
+            onClick={() => setShowBookingWizard(true)}
+            className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50"
+          >
+            Start Booking
+          </Button>
         </div>
       </section>
+
+      {/* Booking Wizard Modal */}
+      {showBookingWizard && (
+        <BookingWizard onClose={() => setShowBookingWizard(false)} />
+      )}
     </div>
   );
 }
