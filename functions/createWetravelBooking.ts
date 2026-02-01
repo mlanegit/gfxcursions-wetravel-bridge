@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     }
 
     const WETRAVEL_TRIP_ID = Deno.env.get('WETRAVEL_TRIP_ID');
-    console.log('WeTravel Trip ID:', WETRAVEL_TRIP_ID);
+    console.log('WETRAVEL_TRIP_ID from env:', WETRAVEL_TRIP_ID);
 
     if (!WETRAVEL_TRIP_ID) {
       return Response.json({ error: 'WeTravel not configured' }, { status: 500 });
