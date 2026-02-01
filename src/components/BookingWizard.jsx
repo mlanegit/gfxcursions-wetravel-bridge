@@ -72,8 +72,8 @@ export default function BookingWizard({ onClose }) {
     setIsSubmitting(true);
     
     try {
-      // Store booking in Base44
-      await base44.entities.Booking.create({
+      // Create booking via WeTravel API
+      const response = await base44.functions.invoke('createWetravelBooking', {
         name: bookingData.name,
         email: bookingData.email,
         phone: bookingData.phone || '',
@@ -83,14 +83,18 @@ export default function BookingWizard({ onClose }) {
         guests: bookingData.guests,
         price_per_person: getPrice(),
         total_price: getTotalPrice(),
-        payment_status: 'pending',
-        status: 'pending',
       });
 
-      toast.success('Redirecting to payment...');
-      
-      // Redirect to WeTravel trip page
-      window.location.href = 'https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714';
+      if (response.data.success && response.data.checkout_url) {
+        toast.success('Redirecting to payment...');
+        
+        // Redirect to WeTravel checkout with pre-filled information
+        setTimeout(() => {
+          window.location.href = response.data.checkout_url;
+        }, 500);
+      } else {
+        throw new Error(response.data.error || 'Failed to create booking');
+      }
       
     } catch (error) {
       console.error('Booking error:', error);
