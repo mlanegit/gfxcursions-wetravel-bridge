@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
 
     // Build WeTravel checkout URL
     const checkoutUrl = `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}`;
+    console.log('Generated checkout URL:', checkoutUrl);
 
     return Response.json({
       success: true,
