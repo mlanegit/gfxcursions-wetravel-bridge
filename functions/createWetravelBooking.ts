@@ -38,18 +38,8 @@ Deno.serve(async (req) => {
       status: 'pending',
     });
 
-    // Build WeTravel checkout URL with pre-filled data
-    const firstName = bookingData.name.split(' ')[0];
-    const lastName = bookingData.name.split(' ').slice(1).join(' ') || '';
-    
-    const params = new URLSearchParams({
-      first_name: firstName,
-      last_name: lastName,
-      email: bookingData.email,
-      phone: bookingData.phone || '',
-    });
-
-    const checkoutUrl = `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}?${params.toString()}`;
+    // Build WeTravel checkout URL
+    const checkoutUrl = `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}`;
 
     return Response.json({
       success: true,
