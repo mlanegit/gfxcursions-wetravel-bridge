@@ -24,26 +24,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'WeTravel API not configured' }, { status: 500 });
     }
 
-    // First, get an access token from the refresh token
-    const tokenResponse = await fetch('https://api.wetravel.com/auth/access_token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WETRAVEL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!tokenResponse.ok) {
-      const error = await tokenResponse.text();
-      console.error('WeTravel Token Error:', error);
-      return Response.json({ 
-        error: 'Failed to get WeTravel access token',
-        details: error 
-      }, { status: 500 });
-    }
-
-    const { access_token } = await tokenResponse.json();
-
     // Build package name to match WeTravel's format
     const getPackageName = () => {
       const nightsText = bookingData.nights === '3' ? '3 Nights' : '4 Nights Stay';
@@ -63,7 +43,7 @@ Deno.serve(async (req) => {
     const wetravelResponse = await fetch(`https://api.wetravel.com/trips/${WETRAVEL_TRIP_ID}/bookings`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${access_token}`,
+        'Authorization': `Token ${WETRAVEL_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
