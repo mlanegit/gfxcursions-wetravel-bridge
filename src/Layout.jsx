@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
+import BookingWizard from './components/BookingWizard';
 
 export default function Layout({ children, currentPageName }) {
+  const [showBookingWizard, setShowBookingWizard] = useState(false);
+  
   return (
     <div className="min-h-screen bg-black">
       {/* Header/Navigation */}
@@ -66,12 +69,12 @@ export default function Layout({ children, currentPageName }) {
           </nav>
 
           {/* Book Now Button */}
-          <Link 
-            to={createPageUrl('Contact')}
+          <button
+            onClick={() => setShowBookingWizard(true)}
             className="bg-green-600 hover:bg-green-700 text-white font-black px-8 py-3 rounded transition-all shadow-lg hover:shadow-green-600/50 uppercase tracking-wide text-sm"
           >
             Book Now
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -79,6 +82,11 @@ export default function Layout({ children, currentPageName }) {
       <main className="pt-16">
         {children}
       </main>
-    </div>
-  );
-}
+
+      {/* Booking Wizard Modal */}
+      {showBookingWizard && (
+        <BookingWizard onClose={() => setShowBookingWizard(false)} />
+      )}
+      </div>
+      );
+      }
