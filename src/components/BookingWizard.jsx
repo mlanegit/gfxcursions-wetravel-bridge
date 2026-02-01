@@ -72,21 +72,6 @@ export default function BookingWizard({ onClose }) {
     setIsSubmitting(true);
     
     try {
-      // Store booking in Base44
-      const booking = await base44.entities.Booking.create({
-        name: bookingData.name,
-        email: bookingData.email,
-        phone: bookingData.phone || '',
-        package: bookingData.packageType,
-        nights: bookingData.nights,
-        occupancy: bookingData.occupancy,
-        guests: bookingData.guests,
-        price_per_person: getPrice(),
-        total_price: getTotalPrice(),
-        payment_status: 'pending',
-        status: 'pending',
-      });
-
       // Build WeTravel package name to match their format
       const getWeTravelPackageName = () => {
         const nightsText = bookingData.nights === '3' ? '3 Nights' : '4 Nights Stay';
@@ -102,23 +87,30 @@ export default function BookingWizard({ onClose }) {
         return '';
       };
 
-      // Build WeTravel checkout URL with pre-filled info
-      const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714');
-      wetravelUrl.searchParams.set('email', bookingData.email);
-      wetravelUrl.searchParams.set('first_name', bookingData.name.split(' ')[0]);
-      wetravelUrl.searchParams.set('last_name', bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0]);
-      if (bookingData.phone) {
-        wetravelUrl.searchParams.set('phone', bookingData.phone);
-      }
-      wetravelUrl.searchParams.set('package_name', getWeTravelPackageName());
-      wetravelUrl.searchParams.set('num_travelers', String(bookingData.guests));
+      // Create booking via WeTravel Partner API
+      const response = await base44.functions.invoke('createWetravelBooking', {
+        name: bookingData.name,
+        email: bookingData.email,
+        phone: bookingData.phone || '',
+        package: bookingData.packageType,
+        package_name: getWeTravelPackageName(),
+        nights: bookingData.nights,
+        occupancy: bookingData.occupancy,
+        guests: bookingData.guests,
+        price_per_person: getPrice(),
+        total_price: getTotalPrice(),
+      });
 
-      toast.success('Redirecting to payment...');
-      
-      // Redirect to WeTravel
-      setTimeout(() => {
-        window.location.href = wetravelUrl.toString();
-      }, 500);
+      if (response.data.success && response.data.checkout_url) {
+        toast.success('Redirecting to payment...');
+        
+        // Redirect to WeTravel checkout
+        setTimeout(() => {
+          window.location.href = response.data.checkout_url;
+        }, 500);
+      } else {
+        throw new Error(response.data.error || 'Failed to create booking');
+      }
       
     } catch (error) {
       console.error('Booking error:', error);
