@@ -17,13 +17,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Force fresh read of environment variable
-    const WETRAVEL_TRIP_ID = Deno.env.get('WETRAVEL_TRIP_ID');
-    console.log('WETRAVEL_TRIP_ID from env:', WETRAVEL_TRIP_ID);
-
-    if (!WETRAVEL_TRIP_ID) {
-      return Response.json({ error: 'WeTravel not configured' }, { status: 500 });
-    }
+    // Hard-coded Trip ID
+    const WETRAVEL_TRIP_ID = '0062792714';
+    console.log('WETRAVEL_TRIP_ID:', WETRAVEL_TRIP_ID);
     
     // Store booking in Base44
     const booking = await base44.asServiceRole.entities.Booking.create({
