@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     }
 
     // Step 1: Get access token from refresh token
-    const tokenResponse = await fetch('https://api.wetravel.com/auth/access_token', {
+    const tokenResponse = await fetch('https://api.wetravel.com/v2/auth/tokens/access', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${WETRAVEL_API_KEY}`,
