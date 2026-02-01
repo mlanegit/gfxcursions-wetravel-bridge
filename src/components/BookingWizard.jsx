@@ -72,45 +72,25 @@ export default function BookingWizard({ onClose }) {
     setIsSubmitting(true);
     
     try {
-      // Build WeTravel package name to match their format
-      const getWeTravelPackageName = () => {
-        const nightsText = bookingData.nights === '3' ? '3 Nights' : '4 Nights Stay';
-        const occupancyText = bookingData.occupancy === 'single' ? 'Single' : 'Double';
-        
-        if (bookingData.packageType === 'luxury-suite') {
-          return `Luxury Suite ${occupancyText} Occupancy ${nightsText}`;
-        } else if (bookingData.packageType === 'diamond-club') {
-          return `Luxury Suite ${occupancyText} DC ${nightsText}`;
-        } else if (bookingData.packageType === 'ocean-view-dc') {
-          return `Luxury Ocean View ${occupancyText} DC ${nightsText}`;
-        }
-        return '';
-      };
-
-      // Create booking via WeTravel Partner API
-      const response = await base44.functions.invoke('createWetravelBooking', {
+      // Store booking in Base44
+      await base44.entities.Booking.create({
         name: bookingData.name,
         email: bookingData.email,
         phone: bookingData.phone || '',
         package: bookingData.packageType,
-        package_name: getWeTravelPackageName(),
         nights: bookingData.nights,
         occupancy: bookingData.occupancy,
         guests: bookingData.guests,
         price_per_person: getPrice(),
         total_price: getTotalPrice(),
+        payment_status: 'pending',
+        status: 'pending',
       });
 
-      if (response.data.success && response.data.checkout_url) {
-        toast.success('Redirecting to payment...');
-        
-        // Redirect to WeTravel checkout
-        setTimeout(() => {
-          window.location.href = response.data.checkout_url;
-        }, 500);
-      } else {
-        throw new Error(response.data.error || 'Failed to create booking');
-      }
+      toast.success('Redirecting to payment...');
+      
+      // Redirect to WeTravel trip page
+      window.location.href = 'https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714';
       
     } catch (error) {
       console.error('Booking error:', error);
