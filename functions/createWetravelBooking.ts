@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Force fresh read of environment variable
     const WETRAVEL_TRIP_ID = Deno.env.get('WETRAVEL_TRIP_ID');
     console.log('WETRAVEL_TRIP_ID from env:', WETRAVEL_TRIP_ID);
 
