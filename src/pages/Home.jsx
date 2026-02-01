@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Calendar, Users, Music, Waves, Gift, Bus, Palmtree, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import BookingWizard from '../components/BookingWizard';
 
 export default function Home() {
+  const [showBookingWizard, setShowBookingWizard] = useState(false);
   const highlights = [
     { icon: Calendar, text: '5 Days / 4 Nights' },
     { icon: Music, text: 'Celebrity DJs & Hosts' },
@@ -77,11 +79,12 @@ export default function Home() {
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
               Presented by GFX
             </p>
-            <Link to={createPageUrl('Contact')}>
-              <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all">
-                Register Now
-              </Button>
-            </Link>
+            <Button 
+              onClick={() => setShowBookingWizard(true)}
+              className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all"
+            >
+              Register Now
+            </Button>
           </motion.div>
         </div>
 
@@ -272,13 +275,19 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8">
             Limited spots available. Lock in your spot before it's too late.
           </p>
-          <Link to={createPageUrl('Contact')}>
-            <Button className="bg-green-600 hover:bg-green-700 text-white font-black px-16 py-8 text-2xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all">
-              Book Now for 2026
-            </Button>
-          </Link>
+          <Button 
+            onClick={() => setShowBookingWizard(true)}
+            className="bg-green-600 hover:bg-green-700 text-white font-black px-16 py-8 text-2xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all"
+          >
+            Book Now for 2026
+          </Button>
         </div>
       </section>
+
+      {/* Booking Wizard Modal */}
+      {showBookingWizard && (
+        <BookingWizard onClose={() => setShowBookingWizard(false)} />
+      )}
     </div>
   );
 }
