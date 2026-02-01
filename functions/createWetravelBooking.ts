@@ -24,38 +24,77 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'WeTravel API not configured' }, { status: 500 });
     }
 
-    // Create booking/lead in WeTravel using their Partner API
-    const wetravelResponse = await fetch(`https://api.wetravel.com/partner_api/v1/trips/${WETRAVEL_TRIP_ID}/leads`, {
+    // First, get an access token from the refresh token
+    const tokenResponse = await fetch('https://api.wetravel.com/auth/access_token', {
       method: 'POST',
       headers: {
-        'Authorization': `Token ${WETRAVEL_API_KEY}`,
+        'Authorization': `Bearer ${WETRAVEL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!tokenResponse.ok) {
+      const error = await tokenResponse.text();
+      console.error('WeTravel Token Error:', error);
+      return Response.json({ 
+        error: 'Failed to get WeTravel access token',
+        details: error 
+      }, { status: 500 });
+    }
+
+    const { access_token } = await tokenResponse.json();
+
+    // Build package name to match WeTravel's format
+    const getPackageName = () => {
+      const nightsText = bookingData.nights === '3' ? '3 Nights' : '4 Nights Stay';
+      const occupancyText = bookingData.occupancy === 'single' ? 'Single' : 'Double';
+      
+      if (bookingData.package === 'luxury-suite') {
+        return `Luxury Suite ${occupancyText} Occupancy ${nightsText}`;
+      } else if (bookingData.package === 'diamond-club') {
+        return `Luxury Suite ${occupancyText} DC ${nightsText}`;
+      } else if (bookingData.package === 'ocean-view-dc') {
+        return `Luxury Ocean View ${occupancyText} DC ${nightsText}`;
+      }
+      return '';
+    };
+
+    // Create booking in WeTravel using Bookings API
+    const wetravelResponse = await fetch(`https://api.wetravel.com/trips/${WETRAVEL_TRIP_ID}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        first_name: bookingData.name.split(' ')[0],
-        last_name: bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0],
-        email: bookingData.email,
-        phone: bookingData.phone || '',
-        notes: `Package: ${bookingData.package_name}\nNights: ${bookingData.nights}\nOccupancy: ${bookingData.occupancy}\nGuests: ${bookingData.guests}\nTotal: $${bookingData.total_price}`,
+        booking: {
+          first_name: bookingData.name.split(' ')[0],
+          last_name: bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0],
+          email: bookingData.email,
+          phone: bookingData.phone || '',
+          num_participants: bookingData.guests,
+          package_name: getPackageName(),
+          price: bookingData.total_price,
+        }
       }),
     });
 
     if (!wetravelResponse.ok) {
       const error = await wetravelResponse.text();
-      console.error('WeTravel API Error:', error);
+      console.error('WeTravel Booking Error:', error);
       return Response.json({ 
-        error: 'Failed to create WeTravel lead',
+        error: 'Failed to create WeTravel booking',
         details: error 
       }, { status: 500 });
     }
 
-    const wetravelLead = await wetravelResponse.json();
-    console.log('WeTravel Lead Created:', wetravelLead);
+    const wetravelBooking = await wetravelResponse.json();
+    console.log('WeTravel Booking Created:', wetravelBooking);
     
-    // Use the checkout URL from WeTravel API response or construct one
-    const checkoutUrl = wetravelLead.checkout_url || 
-                        wetravelLead.booking_url || 
-                        `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}?lead=${wetravelLead.id || wetravelLead.lead_id}`;
+    // Generate checkout URL
+    const checkoutUrl = wetravelBooking.checkout_url || 
+                        wetravelBooking.payment_url ||
+                        `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}/checkout?booking_id=${wetravelBooking.id || wetravelBooking.booking_id}`;
     
     // Store booking in Base44
     const booking = await base44.asServiceRole.entities.Booking.create({
@@ -68,7 +107,7 @@ Deno.serve(async (req) => {
       guests: bookingData.guests,
       price_per_person: bookingData.price_per_person,
       total_price: bookingData.total_price,
-      wetravel_booking_id: wetravelLead.id || wetravelLead.lead_id,
+      wetravel_booking_id: wetravelBooking.id || wetravelBooking.booking_id,
       checkout_url: checkoutUrl,
       payment_status: 'pending',
       status: 'pending',
@@ -78,7 +117,7 @@ Deno.serve(async (req) => {
       success: true,
       booking_id: booking.id,
       checkout_url: checkoutUrl,
-      wetravel_lead_id: wetravelLead.id || wetravelLead.lead_id,
+      wetravel_booking_id: wetravelBooking.id || wetravelBooking.booking_id,
     });
 
   } catch (error) {
