@@ -88,7 +88,7 @@ export default function BookingWizard({ onClose }) {
       });
 
       // Build WeTravel checkout URL with pre-filled info
-      const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/lost-in-st-lucia-gfx-20061731');
+      const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/TestLostinJamaica00');
       wetravelUrl.searchParams.set('email', bookingData.email);
       wetravelUrl.searchParams.set('first_name', bookingData.name.split(' ')[0]);
       wetravelUrl.searchParams.set('last_name', bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0]);
