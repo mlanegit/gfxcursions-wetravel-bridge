@@ -43,78 +43,21 @@ Deno.serve(async (req) => {
       wetravel_refs: {}
     });
 
-    // Create booking via WeTravel Booking API
-    const wetravelPayload = {
-      buyer: {
-        first_name: intentData.traveler_primary.first_name,
-        last_name: intentData.traveler_primary.last_name,
-        email: intentData.traveler_primary.email,
-        phone: intentData.traveler_primary.phone || ''
-      },
-      participants: [{
-        first_name: intentData.traveler_primary.first_name,
-        last_name: intentData.traveler_primary.last_name,
-        email: intentData.traveler_primary.email,
-        phone: intentData.traveler_primary.phone || ''
-      }],
-      notes: `Intent ID: ${intent.id}`,
-      internal_reference: intent.id
-    };
-
-    // Add package if specified
-    if (intentData.package_id) {
-      wetravelPayload.package_id = intentData.package_id;
-    }
-
-    console.log('Creating WeTravel booking:', wetravelPayload);
-
-    const wetravelResponse = await fetch(
-      `https://api.wetravel.com/v1/trips/${WETRAVEL_TRIP_ID}/bookings`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${WETRAVEL_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(wetravelPayload)
-      }
-    );
-
-    const responseText = await wetravelResponse.text();
-    console.log('WeTravel API response:', wetravelResponse.status, responseText);
+    // WeTravel's Booking API doesn't support creating bookings via POST
+    // Instead, we generate a checkout URL and store the intent for webhook reconciliation
+    const checkoutUrl = `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}`;
     
-    let wetravelData;
-    try {
-      wetravelData = JSON.parse(responseText);
-    } catch (e) {
-      wetravelData = { error: responseText || 'Empty response from WeTravel' };
-    }
+    console.log('Generated checkout URL:', checkoutUrl);
+    console.log('Intent stored with traveler info for webhook reconciliation:', {
+      name: `${intentData.traveler_primary.first_name} ${intentData.traveler_primary.last_name}`,
+      email: intentData.traveler_primary.email,
+      package: intentData.package_id
+    });
 
-    if (!wetravelResponse.ok) {
-      await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
-        status: 'failed',
-        notes: `WeTravel API error: ${JSON.stringify(wetravelData)}`
-      });
-
-      return Response.json({ 
-        error: 'Failed to create WeTravel booking',
-        details: wetravelData,
-        intent_id: intent.id
-      }, { status: 500 });
-    }
-
-    // Extract booking info from WeTravel response
-    const bookingId = wetravelData.id || wetravelData.booking_id;
-    const checkoutUrl = wetravelData.checkout_url || 
-                        wetravelData.payment_url || 
-                        wetravelData.payment_link ||
-                        `https://gfxcursions.wetravel.com/bookings/${bookingId}`;
-
-    // Update intent with WeTravel references and mark as handed_off
+    // Update intent with checkout URL and mark as handed_off
     await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
       status: 'handed_off',
       wetravel_refs: {
-        booking_id: bookingId,
         payment_link: checkoutUrl
       }
     });
