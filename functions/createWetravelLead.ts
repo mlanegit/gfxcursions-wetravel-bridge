@@ -43,35 +43,71 @@ Deno.serve(async (req) => {
       wetravel_refs: {}
     });
 
-    // Build WeTravel checkout URL with prefilled parameters
-    // WeTravel supports URL parameters to prefill checkout form
-    const params = new URLSearchParams({
-      first_name: intentData.traveler_primary.first_name,
-      last_name: intentData.traveler_primary.last_name,
-      email: intentData.traveler_primary.email,
-      guests: String(intentData.travelers_count || 1),
-      // Store intent ID for webhook reconciliation
-      notes: `Intent: ${intent.id}`,
-    });
+    // Create booking via WeTravel Booking API
+    const wetravelPayload = {
+      buyer: {
+        first_name: intentData.traveler_primary.first_name,
+        last_name: intentData.traveler_primary.last_name,
+        email: intentData.traveler_primary.email,
+        phone: intentData.traveler_primary.phone || ''
+      },
+      participants: [{
+        first_name: intentData.traveler_primary.first_name,
+        last_name: intentData.traveler_primary.last_name,
+        email: intentData.traveler_primary.email,
+        phone: intentData.traveler_primary.phone || ''
+      }],
+      notes: `Intent ID: ${intent.id}`,
+      internal_reference: intent.id
+    };
 
-    // Add phone if provided
-    if (intentData.traveler_primary.phone) {
-      params.append('phone', intentData.traveler_primary.phone);
-    }
-
-    // Add package selection if it maps to WeTravel package
+    // Add package if specified
     if (intentData.package_id) {
-      params.append('package', intentData.package_id);
+      wetravelPayload.package_id = intentData.package_id;
     }
 
-    const checkoutUrl = `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}?${params.toString()}`;
-    
-    console.log('Generated prefilled checkout URL:', checkoutUrl);
+    console.log('Creating WeTravel booking:', wetravelPayload);
 
-    // Update intent with checkout URL and mark as handed_off
+    const wetravelResponse = await fetch(
+      `https://api.wetravel.com/v1/trips/${WETRAVEL_TRIP_ID}/bookings`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${WETRAVEL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(wetravelPayload)
+      }
+    );
+
+    const wetravelData = await wetravelResponse.json();
+    console.log('WeTravel API response:', wetravelResponse.status, wetravelData);
+
+    if (!wetravelResponse.ok) {
+      await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
+        status: 'failed',
+        notes: `WeTravel API error: ${JSON.stringify(wetravelData)}`
+      });
+
+      return Response.json({ 
+        error: 'Failed to create WeTravel booking',
+        details: wetravelData,
+        intent_id: intent.id
+      }, { status: 500 });
+    }
+
+    // Extract booking info from WeTravel response
+    const bookingId = wetravelData.id || wetravelData.booking_id;
+    const checkoutUrl = wetravelData.checkout_url || 
+                        wetravelData.payment_url || 
+                        wetravelData.payment_link ||
+                        `https://gfxcursions.wetravel.com/bookings/${bookingId}`;
+
+    // Update intent with WeTravel references and mark as handed_off
     await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
       status: 'handed_off',
       wetravel_refs: {
+        booking_id: bookingId,
         payment_link: checkoutUrl
       }
     });
