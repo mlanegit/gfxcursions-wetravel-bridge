@@ -80,8 +80,15 @@ Deno.serve(async (req) => {
       }
     );
 
-    const wetravelData = await wetravelResponse.json();
-    console.log('WeTravel API response:', wetravelResponse.status, wetravelData);
+    const responseText = await wetravelResponse.text();
+    console.log('WeTravel API response:', wetravelResponse.status, responseText);
+    
+    let wetravelData;
+    try {
+      wetravelData = JSON.parse(responseText);
+    } catch (e) {
+      wetravelData = { error: responseText || 'Empty response from WeTravel' };
+    }
 
     if (!wetravelResponse.ok) {
       await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
