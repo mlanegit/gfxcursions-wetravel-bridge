@@ -43,58 +43,35 @@ Deno.serve(async (req) => {
       wetravel_refs: {}
     });
 
-    // Create lead in WeTravel via API
-    const wetravelPayload = {
-      trip_id: WETRAVEL_TRIP_ID,
+    // Build WeTravel checkout URL with prefilled parameters
+    // WeTravel supports URL parameters to prefill checkout form
+    const params = new URLSearchParams({
       first_name: intentData.traveler_primary.first_name,
       last_name: intentData.traveler_primary.last_name,
       email: intentData.traveler_primary.email,
-      phone: intentData.traveler_primary.phone || '',
-      guests: intentData.travelers_count || 1,
-      notes: intentData.notes || '',
-      // Store our internal intent ID in notes for reconciliation
-      internal_reference: intent.id
-    };
-
-    console.log('Creating WeTravel lead with payload:', wetravelPayload);
-
-    const wetravelResponse = await fetch('https://api.wetravel.com/v1/leads', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WETRAVEL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(wetravelPayload)
+      guests: String(intentData.travelers_count || 1),
+      // Store intent ID for webhook reconciliation
+      notes: `Intent: ${intent.id}`,
     });
 
-    const wetravelData = await wetravelResponse.json();
-    console.log('WeTravel API response:', wetravelData);
-
-    if (!wetravelResponse.ok) {
-      // Update intent status to failed
-      await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
-        status: 'failed',
-        notes: `WeTravel API error: ${wetravelData.error || wetravelResponse.statusText}`
-      });
-
-      return Response.json({ 
-        error: 'Failed to create WeTravel lead',
-        details: wetravelData,
-        intent_id: intent.id
-      }, { status: 500 });
+    // Add phone if provided
+    if (intentData.traveler_primary.phone) {
+      params.append('phone', intentData.traveler_primary.phone);
     }
 
-    // Extract lead/booking info from WeTravel response
-    const leadId = wetravelData.id || wetravelData.lead_id;
-    const checkoutUrl = wetravelData.checkout_url || 
-                        wetravelData.payment_link || 
-                        `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}`;
+    // Add package selection if it maps to WeTravel package
+    if (intentData.package_id) {
+      params.append('package', intentData.package_id);
+    }
 
-    // Update intent with WeTravel references and mark as handed_off
+    const checkoutUrl = `https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-${WETRAVEL_TRIP_ID}?${params.toString()}`;
+    
+    console.log('Generated prefilled checkout URL:', checkoutUrl);
+
+    // Update intent with checkout URL and mark as handed_off
     await base44.asServiceRole.entities.BookingIntent.update(intent.id, {
       status: 'handed_off',
       wetravel_refs: {
-        lead_id: leadId,
         payment_link: checkoutUrl
       }
     });
