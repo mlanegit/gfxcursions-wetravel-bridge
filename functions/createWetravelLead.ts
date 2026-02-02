@@ -81,7 +81,6 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       intent_id: intent.id,
-      wetravel_lead_id: leadId,
       checkout_url: checkoutUrl
     });
 
