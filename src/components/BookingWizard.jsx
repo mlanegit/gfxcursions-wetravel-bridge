@@ -17,9 +17,11 @@ export default function BookingWizard({ onClose }) {
     nights: '',
     occupancy: '',
     guests: 1,
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
+    tshirtSize: '',
   });
 
   const packages = [
@@ -74,15 +76,16 @@ export default function BookingWizard({ onClose }) {
     try {
       // Create booking via WeTravel API
       const response = await base44.functions.invoke('createWetravelBooking', {
-        name: bookingData.name,
+        name: `${bookingData.firstName} ${bookingData.lastName}`,
         email: bookingData.email,
-        phone: bookingData.phone || '',
+        phone: bookingData.phone,
         package: bookingData.packageType,
         nights: bookingData.nights,
         occupancy: bookingData.occupancy,
         guests: bookingData.guests,
         price_per_person: getPrice(),
         total_price: getTotalPrice(),
+        tshirt_size: bookingData.tshirtSize,
       });
 
       if (response.data.success && response.data.checkout_url) {
@@ -106,7 +109,7 @@ export default function BookingWizard({ onClose }) {
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
-    if (step === 3) return bookingData.name && bookingData.email;
+    if (step === 3) return bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone && bookingData.tshirtSize;
     return true;
   };
 
@@ -338,17 +341,31 @@ export default function BookingWizard({ onClose }) {
                   </h3>
 
                   <div className="space-y-4">
-                    <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Full Name *
-                      </Label>
-                      <Input
-                        value={bookingData.name}
-                        onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })}
-                        className="bg-black border-zinc-700 text-white"
-                        placeholder="John Doe"
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                          First Name *
+                        </Label>
+                        <Input
+                          value={bookingData.firstName}
+                          onChange={(e) => setBookingData({ ...bookingData, firstName: e.target.value })}
+                          className="bg-black border-zinc-700 text-white"
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                          Last Name *
+                        </Label>
+                        <Input
+                          value={bookingData.lastName}
+                          onChange={(e) => setBookingData({ ...bookingData, lastName: e.target.value })}
+                          className="bg-black border-zinc-700 text-white"
+                          placeholder="Doe"
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -367,7 +384,7 @@ export default function BookingWizard({ onClose }) {
 
                     <div>
                       <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Phone Number
+                        Phone Number *
                       </Label>
                       <Input
                         type="tel"
@@ -375,7 +392,31 @@ export default function BookingWizard({ onClose }) {
                         onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
                         className="bg-black border-zinc-700 text-white"
                         placeholder="+1 (555) 123-4567"
+                        required
                       />
+                    </div>
+
+                    <div>
+                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                        T-Shirt Size *
+                      </Label>
+                      <Select
+                        value={bookingData.tshirtSize}
+                        onValueChange={(value) => setBookingData({ ...bookingData, tshirtSize: value })}
+                      >
+                        <SelectTrigger className="bg-black border-zinc-700 text-white">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="XS">XS</SelectItem>
+                          <SelectItem value="S">S</SelectItem>
+                          <SelectItem value="M">M</SelectItem>
+                          <SelectItem value="L">L</SelectItem>
+                          <SelectItem value="XL">XL</SelectItem>
+                          <SelectItem value="XXL">XXL</SelectItem>
+                          <SelectItem value="3XL">3XL</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </motion.div>
@@ -400,7 +441,7 @@ export default function BookingWizard({ onClose }) {
                         <Users className="w-5 h-5 text-green-500" />
                         <span className="text-gray-400">Guest Name</span>
                       </div>
-                      <span className="text-white font-bold">{bookingData.name}</span>
+                      <span className="text-white font-bold">{bookingData.firstName} {bookingData.lastName}</span>
                     </div>
 
                     <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
