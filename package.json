@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "start": "echo \"Serverless API – no local server needed\""
+  },
   "dependencies": {
     "pino": "^9.0.0",
     "zod": "^3.23.0"
