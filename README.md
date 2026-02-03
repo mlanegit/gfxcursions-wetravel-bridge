@@ -25,26 +25,7 @@ e.g.
 VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
 VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
 ```
-## WeTravel Bridge (Base44 -> WeTravel Pro)
 
-### Env vars (Vercel Project Settings)
-- WETRAVEL_API_KEY=...
-- WETRAVEL_API_BASE=https://api.wetravel.com
-- RATE_LIMIT_PER_MIN=30
-
-### Endpoint
-POST /api/create-booking
-
-Body:
-{
-  "tripId": "...",
-  "packageId": "...",
-  "firstName": "...",
-  "lastName": "...",
-  "email": "...",
-  "phone": "...",
-  "tshirtSize": "M"
-}
 Run the app: `npm run dev`
 
 **Publish your changes**
