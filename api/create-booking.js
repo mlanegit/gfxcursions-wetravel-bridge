@@ -118,7 +118,7 @@ if (!checkoutUrl) {
 log.info({ requestId }, "Checkout session created");
 
 return res.status(200).json({
-  payment_url: checkoutUrl
+  checkout_url: https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714
 });
     
   } catch (err) {
