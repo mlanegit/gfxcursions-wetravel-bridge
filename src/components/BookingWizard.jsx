@@ -69,40 +69,38 @@ export default function BookingWizard({ onClose }) {
   };
 
   const handleBookNow = async () => {
-    setIsSubmitting(true);
-    
-    try {
-      // Create booking via WeTravel API
-      const response = await base44.functions.invoke('createWetravelBooking', {
-        name: bookingData.name,
+  setIsSubmitting(true);
+
+  try {
+    const response = await fetch("/api/create-booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        // Minimal payload for redirect test
+        tripId: "0062792714",
+        packageId: "TEST",
+        firstName: bookingData.name?.split(" ")[0] || "Test",
+        lastName: bookingData.name?.split(" ").slice(1).join(" ") || "User",
         email: bookingData.email,
-        phone: bookingData.phone || '',
-        package: bookingData.packageType,
-        nights: bookingData.nights,
-        occupancy: bookingData.occupancy,
-        guests: bookingData.guests,
-        price_per_person: getPrice(),
-        total_price: getTotalPrice(),
-      });
+        phone: bookingData.phone || "",
+        tshirtSize: "M"
+      })
+    });
 
-      if (response.data.success && response.data.checkout_url) {
-        toast.success('Redirecting to payment...');
-        
-        // Redirect to WeTravel checkout with pre-filled information
-        setTimeout(() => {
-          window.location.href = response.data.checkout_url;
-        }, 500);
-      } else {
-        throw new Error(response.data.error || 'Failed to create booking');
-      }
-      
-    } catch (error) {
-      console.error('Booking error:', error);
-      toast.error('Something went wrong. Please try again or contact support.');
-      setIsSubmitting(false);
-    }
-  };
+    const data = await response.json();
 
+    console.log("Redirect URL:", data.checkout_url);
+
+    // ✅ THIS is the only thing we are validating right now
+    window.location.href = data.checkout_url;
+
+  } catch (error) {
+    console.error("Redirect test failed:", error);
+    toast.error("Unable to continue to checkout. Please try again.");
+    setIsSubmitting(false);
+  }
+};
+  
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
