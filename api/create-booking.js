@@ -64,82 +64,63 @@ export default async function handler(req, res) {
   try {
     log.info({ requestId, ip, tripId, packageId, email }, "Create booking start");
 
-    // 1) Create booking
-    const bookingRes = await fetchWithRetry(
-      `${base}/v2/bookings`,
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          trip_id: tripId,
-          package_id: packageId,
-          participants: [
-            {
-              first_name: firstName,
-              last_name: lastName,
-              email,
-              phone,
-              custom_answers: [
-                { question: "T-Shirt Size", answer: tshirtSize }
-              ]
-            }
+    // Create checkout session (WeTravel hosted)
+const checkoutRes = await fetchWithRetry(
+  `${base}/checkout_sessions`,
+  {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      trip_id: tripId,
+      package_id: packageId,
+      participants: [
+        {
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          phone,
+          custom_answers: [
+            { question: "T-Shirt Size", answer: tshirtSize }
           ]
-        })
-      },
-      { retries: 3 }
-    );
+        }
+      ],
+      success_url: "https://yourdomain.com/thank-you",
+      cancel_url: "https://yourdomain.com/booking"
+    })
+  },
+  { retries: 3 }
+);
 
-    const bookingText = await bookingRes.text();
-    let booking;
-    try { booking = JSON.parse(bookingText); } catch { booking = { raw: bookingText }; }
+const checkoutText = await checkoutRes.text();
+let checkout;
+try { checkout = JSON.parse(checkoutText); }
+catch { checkout = { raw: checkoutText }; }
 
-    if (!bookingRes.ok) {
-      log.error({ requestId, status: bookingRes.status, booking }, "Create booking failed");
-      return res.status(502).json({ error: "WeTravel booking failed", status: bookingRes.status });
-    }
+if (!checkoutRes.ok) {
+  log.error(
+    { requestId, status: checkoutRes.status, checkout },
+    "Create checkout session failed"
+  );
+  return res.status(502).json({
+    error: "WeTravel checkout failed",
+    status: checkoutRes.status
+  });
+}
 
-    const bookingId = booking?.id;
-    if (!bookingId) {
-      log.error({ requestId, booking }, "Missing booking id in WeTravel response");
-      return res.status(502).json({ error: "WeTravel booking response missing id" });
-    }
+const checkoutUrl = checkout?.url;
+if (!checkoutUrl) {
+  log.error({ requestId, checkout }, "Missing checkout url in WeTravel response");
+  return res.status(502).json({
+    error: "WeTravel checkout response missing url"
+  });
+}
 
-    // 2) Create payment link
-    const paymentRes = await fetchWithRetry(
-      `${base}/v2/payment_links`,
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          booking_id: bookingId,
-          payment_type: "deposit",
-          redirect_url: "https://yourdomain.com/thank-you"
-        })
-      },
-      { retries: 3 }
-    );
+log.info({ requestId }, "Checkout session created");
 
-    const payText = await paymentRes.text();
-    let payment;
-    try { payment = JSON.parse(payText); } catch { payment = { raw: payText }; }
-
-    if (!paymentRes.ok) {
-      log.error({ requestId, status: paymentRes.status, payment }, "Create payment link failed");
-      return res.status(502).json({ error: "WeTravel payment link failed", status: paymentRes.status });
-    }
-
-    const paymentUrl = payment?.url;
-    if (!paymentUrl) {
-      log.error({ requestId, payment }, "Missing payment url in WeTravel response");
-      return res.status(502).json({ error: "WeTravel payment response missing url" });
-    }
-
-    log.info({ requestId, bookingId }, "Create booking success");
-
-    return res.status(200).json({
-      payment_url: paymentUrl,
-      booking_id: bookingId
-    });
+return res.status(200).json({
+  payment_url: checkoutUrl
+});
+    
   } catch (err) {
     log.error({ requestId, err: String(err) }, "Unhandled error");
     return res.status(500).json({ error: "Internal server error" });
