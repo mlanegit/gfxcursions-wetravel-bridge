@@ -84,8 +84,8 @@ const checkoutRes = await fetchWithRetry(
           ]
         }
       ],
-      success_url: "https://yourdomain.com/thank-you",
-      cancel_url: "https://yourdomain.com/booking"
+      success_url: "https://lostin-negril.base44.app/thank-you",
+      cancel_url: "https://lostin-negril.base44.app/booking"
     })
   },
   { retries: 3 }
