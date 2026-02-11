@@ -65,7 +65,8 @@ export default function Admin() {
     const endMatch = !endDate || bookingDate <= new Date(endDate);
 
     const searchMatch = !searchQuery || 
-      booking.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (booking.first_name && booking.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (booking.last_name && booking.last_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       booking.email.toLowerCase().includes(searchQuery.toLowerCase());
     
     return statusMatch && paymentMatch && startMatch && endMatch && searchMatch;
@@ -301,7 +302,7 @@ export default function Admin() {
                             <span className="text-sm">{format(new Date(booking.created_date), 'MMM d, yyyy')}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-white font-bold">{booking.name}</TableCell>
+                        <TableCell className="text-white font-bold">{booking.first_name} {booking.last_name}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm text-gray-400">

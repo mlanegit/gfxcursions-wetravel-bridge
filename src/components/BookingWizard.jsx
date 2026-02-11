@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, ChevronRight, ChevronLeft, Users, Calendar, DollarSign, Loader2 } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Users, Calendar, DollarSign, Loader2, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -17,9 +17,22 @@ export default function BookingWizard({ onClose }) {
     nights: '',
     occupancy: '',
     guests: 1,
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    countryCode: '+1',
     phone: '',
+    tshirtSize: '',
+    bedPreference: '',
+    referredBy: '',
+    celebratingBirthday: '',
+    notes: '',
+    arrivalAirline: '',
+    arrivalDate: '',
+    arrivalTime: '',
+    departureAirline: '',
+    departureDate: '',
+    departureTime: '',
   });
 
   const packages = [
@@ -74,9 +87,21 @@ export default function BookingWizard({ onClose }) {
     try {
       // Store booking in Base44
       const booking = await base44.entities.Booking.create({
-        name: bookingData.name,
+        first_name: bookingData.firstName,
+        last_name: bookingData.lastName,
         email: bookingData.email,
-        phone: bookingData.phone || '',
+        phone: `${bookingData.countryCode} ${bookingData.phone}`,
+        tshirt_size: bookingData.tshirtSize,
+        bed_preference: bookingData.bedPreference,
+        referred_by: bookingData.referredBy,
+        celebrating_birthday: bookingData.celebratingBirthday,
+        notes: bookingData.notes,
+        arrival_airline: bookingData.arrivalAirline,
+        arrival_date: bookingData.arrivalDate,
+        arrival_time: bookingData.arrivalTime,
+        departure_airline: bookingData.departureAirline,
+        departure_date: bookingData.departureDate,
+        departure_time: bookingData.departureTime,
         package: bookingData.packageType,
         nights: bookingData.nights,
         occupancy: bookingData.occupancy,
@@ -97,9 +122,22 @@ export default function BookingWizard({ onClose }) {
           nights: '',
           occupancy: '',
           guests: 1,
-          name: '',
+          firstName: '',
+          lastName: '',
           email: '',
+          countryCode: '+1',
           phone: '',
+          tshirtSize: '',
+          bedPreference: '',
+          referredBy: '',
+          celebratingBirthday: '',
+          notes: '',
+          arrivalAirline: '',
+          arrivalDate: '',
+          arrivalTime: '',
+          departureAirline: '',
+          departureDate: '',
+          departureTime: '',
         });
         setStep(1);
         setIsSubmitting(false);
@@ -115,7 +153,7 @@ export default function BookingWizard({ onClose }) {
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
-    if (step === 3) return bookingData.name && bookingData.email;
+    if (step === 3) return bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
     return true;
   };
 
@@ -333,31 +371,45 @@ export default function BookingWizard({ onClose }) {
                 </motion.div>
               )}
 
-              {/* Step 3: Contact Information */}
+              {/* Step 3: Contact & Personal Information */}
               {step === 3 && (
                 <motion.div
                   key="step3"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  className="space-y-6 max-h-[60vh] overflow-y-auto pr-2"
                 >
                   <h3 className="text-white font-black text-xl uppercase mb-4">
                     Your Information
                   </h3>
 
                   <div className="space-y-4">
-                    <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Full Name *
-                      </Label>
-                      <Input
-                        value={bookingData.name}
-                        onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })}
-                        className="bg-black border-zinc-700 text-white"
-                        placeholder="John Doe"
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                          First Name *
+                        </Label>
+                        <Input
+                          value={bookingData.firstName}
+                          onChange={(e) => setBookingData({ ...bookingData, firstName: e.target.value })}
+                          className="bg-black border-zinc-700 text-white"
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                          Last Name *
+                        </Label>
+                        <Input
+                          value={bookingData.lastName}
+                          onChange={(e) => setBookingData({ ...bookingData, lastName: e.target.value })}
+                          className="bg-black border-zinc-700 text-white"
+                          placeholder="Doe"
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -376,15 +428,207 @@ export default function BookingWizard({ onClose }) {
 
                     <div>
                       <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Phone Number
+                        Phone Number *
                       </Label>
-                      <Input
-                        type="tel"
-                        value={bookingData.phone}
-                        onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
-                        className="bg-black border-zinc-700 text-white"
-                        placeholder="+1 (555) 123-4567"
+                      <div className="flex gap-2">
+                        <Select
+                          value={bookingData.countryCode}
+                          onValueChange={(value) => setBookingData({ ...bookingData, countryCode: value })}
+                        >
+                          <SelectTrigger className="bg-black border-zinc-700 text-white w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+1">+1 (US)</SelectItem>
+                            <SelectItem value="+44">+44 (UK)</SelectItem>
+                            <SelectItem value="+1-876">+1-876 (JM)</SelectItem>
+                            <SelectItem value="+91">+91 (IN)</SelectItem>
+                            <SelectItem value="+86">+86 (CN)</SelectItem>
+                            <SelectItem value="+61">+61 (AU)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="tel"
+                          value={bookingData.phone}
+                          onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                          className="bg-black border-zinc-700 text-white flex-1"
+                          placeholder="555-123-4567"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                        T-Shirt Size
+                      </Label>
+                      <Select
+                        value={bookingData.tshirtSize}
+                        onValueChange={(value) => setBookingData({ ...bookingData, tshirtSize: value })}
+                      >
+                        <SelectTrigger className="bg-black border-zinc-700 text-white">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="XS">XS</SelectItem>
+                          <SelectItem value="S">S</SelectItem>
+                          <SelectItem value="M">M</SelectItem>
+                          <SelectItem value="L">L</SelectItem>
+                          <SelectItem value="XL">XL</SelectItem>
+                          <SelectItem value="XXL">XXL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                        Bed Preference
+                      </Label>
+                      <Select
+                        value={bookingData.bedPreference}
+                        onValueChange={(value) => setBookingData({ ...bookingData, bedPreference: value })}
+                      >
+                        <SelectTrigger className="bg-black border-zinc-700 text-white">
+                          <SelectValue placeholder="Select preference" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="king">King</SelectItem>
+                          <SelectItem value="double">Double Beds</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                        Referred By
+                      </Label>
+                      <Select
+                        value={bookingData.referredBy}
+                        onValueChange={(value) => setBookingData({ ...bookingData, referredBy: value })}
+                      >
+                        <SelectTrigger className="bg-black border-zinc-700 text-white">
+                          <SelectValue placeholder="How did you hear about us?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gfx">GFX</SelectItem>
+                          <SelectItem value="social-media">Social Media</SelectItem>
+                          <SelectItem value="friend">Friend</SelectItem>
+                          <SelectItem value="previous-attendee">Previous Attendee</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                        Celebrating a Birthday?
+                      </Label>
+                      <Select
+                        value={bookingData.celebratingBirthday}
+                        onValueChange={(value) => setBookingData({ ...bookingData, celebratingBirthday: value })}
+                      >
+                        <SelectTrigger className="bg-black border-zinc-700 text-white">
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">Yes</SelectItem>
+                          <SelectItem value="no">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                        Notes to Organizer
+                      </Label>
+                      <textarea
+                        value={bookingData.notes}
+                        onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
+                        className="w-full bg-black border border-zinc-700 text-white rounded-md px-3 py-2 min-h-[80px]"
+                        placeholder="Any special requests or notes..."
                       />
+                    </div>
+
+                    <div className="border-t border-zinc-800 pt-4 mt-4">
+                      <h4 className="text-white font-bold uppercase text-sm mb-4">Arrival Information</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-white font-bold mb-2 block uppercase text-xs">
+                            Airline
+                          </Label>
+                          <Input
+                            value={bookingData.arrivalAirline}
+                            onChange={(e) => setBookingData({ ...bookingData, arrivalAirline: e.target.value })}
+                            className="bg-black border-zinc-700 text-white"
+                            placeholder="e.g., Delta"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
+                              Date
+                            </Label>
+                            <Input
+                              type="date"
+                              value={bookingData.arrivalDate}
+                              onChange={(e) => setBookingData({ ...bookingData, arrivalDate: e.target.value })}
+                              className="bg-black border-zinc-700 text-white"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
+                              Time
+                            </Label>
+                            <Input
+                              type="time"
+                              value={bookingData.arrivalTime}
+                              onChange={(e) => setBookingData({ ...bookingData, arrivalTime: e.target.value })}
+                              className="bg-black border-zinc-700 text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-zinc-800 pt-4">
+                      <h4 className="text-white font-bold uppercase text-sm mb-4">Departure Information</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-white font-bold mb-2 block uppercase text-xs">
+                            Airline
+                          </Label>
+                          <Input
+                            value={bookingData.departureAirline}
+                            onChange={(e) => setBookingData({ ...bookingData, departureAirline: e.target.value })}
+                            className="bg-black border-zinc-700 text-white"
+                            placeholder="e.g., United"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
+                              Date
+                            </Label>
+                            <Input
+                              type="date"
+                              value={bookingData.departureDate}
+                              onChange={(e) => setBookingData({ ...bookingData, departureDate: e.target.value })}
+                              className="bg-black border-zinc-700 text-white"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
+                              Time
+                            </Label>
+                            <Input
+                              type="time"
+                              value={bookingData.departureTime}
+                              onChange={(e) => setBookingData({ ...bookingData, departureTime: e.target.value })}
+                              className="bg-black border-zinc-700 text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -409,7 +653,7 @@ export default function BookingWizard({ onClose }) {
                         <Users className="w-5 h-5 text-green-500" />
                         <span className="text-gray-400">Guest Name</span>
                       </div>
-                      <span className="text-white font-bold">{bookingData.name}</span>
+                      <span className="text-white font-bold">{bookingData.firstName} {bookingData.lastName}</span>
                     </div>
 
                     <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
@@ -418,6 +662,14 @@ export default function BookingWizard({ onClose }) {
                         <span className="text-gray-400">Email</span>
                       </div>
                       <span className="text-white font-bold">{bookingData.email}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-400">Phone</span>
+                      </div>
+                      <span className="text-white font-bold">{bookingData.countryCode} {bookingData.phone}</span>
                     </div>
 
                     <div className="flex items-center justify-between pb-4 border-b border-zinc-800">

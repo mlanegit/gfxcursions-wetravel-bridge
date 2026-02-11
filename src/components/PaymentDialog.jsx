@@ -42,7 +42,7 @@ export default function PaymentDialog({ booking, isOpen, onClose, onSave }) {
           <div className="bg-black rounded-lg p-4 border border-zinc-800">
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-400 text-sm">Guest</span>
-              <span className="text-white font-bold">{booking?.name}</span>
+              <span className="text-white font-bold">{booking?.first_name} {booking?.last_name}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Total Price</span>
