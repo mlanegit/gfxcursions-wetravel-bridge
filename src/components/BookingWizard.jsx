@@ -72,6 +72,25 @@ export default function BookingWizard({ onClose }) {
     setIsSubmitting(true);
     
     try {
+      // Map package selection to WeTravel package names
+      const packageMapping = {
+        'luxury-suite-3-single': 'Luxury Suite Single Occupancy 3 Nights',
+        'luxury-suite-3-double': 'Luxury Suite Double Occupancy 3 Nights',
+        'luxury-suite-4-single': 'Luxury Suite Single 4 Nights Stay',
+        'luxury-suite-4-double': 'Luxury Suite Double 4 Nights Stay',
+        'diamond-club-3-single': 'Luxury Suite Single DC 3. Nights',
+        'diamond-club-3-double': 'Luxury Suite Double DC 3 Nights Stay',
+        'diamond-club-4-single': 'Luxury Suite Single DC 4 Nights',
+        'diamond-club-4-double': 'Luxury Suite Double DC 4 Nights',
+        'ocean-view-dc-3-single': 'Luxury Ocean View DC Single 3 Nights',
+        'ocean-view-dc-3-double': 'Luxury Ocean View Double DC 3 Nights',
+        'ocean-view-dc-4-single': 'Luxury Ocean View DC Single 4 Nights',
+        'ocean-view-dc-4-double': 'Luxury Ocean View Double DC 4 Nights',
+      };
+
+      const packageKey = getPriceKey();
+      const wetravelPackageName = packageMapping[packageKey];
+
       // Store booking in Base44
       const booking = await base44.entities.Booking.create({
         name: bookingData.name,
@@ -87,11 +106,15 @@ export default function BookingWizard({ onClose }) {
         status: 'pending',
       });
 
-      // Build WeTravel checkout URL with pre-filled info
-      const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714');
+      // Build WeTravel checkout URL with package and participant info pre-filled
+      const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714/checkout');
+      wetravelUrl.searchParams.set('package_name', wetravelPackageName);
       wetravelUrl.searchParams.set('email', bookingData.email);
       wetravelUrl.searchParams.set('first_name', bookingData.name.split(' ')[0]);
       wetravelUrl.searchParams.set('last_name', bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0]);
+      if (bookingData.phone) {
+        wetravelUrl.searchParams.set('phone', bookingData.phone);
+      }
 
       toast.success('Redirecting to payment...');
       
