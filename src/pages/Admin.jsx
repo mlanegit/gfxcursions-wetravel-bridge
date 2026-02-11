@@ -8,16 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import PaymentDialog from '../components/PaymentDialog';
 
 export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const bookingsPerPage = 10;
 
   const queryClient = useQueryClient();
@@ -39,8 +43,22 @@ export default function Admin() {
     },
   });
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ id, paymentData }) => base44.entities.Booking.update(id, paymentData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      toast.success('Payment information updated');
+      setIsPaymentDialogOpen(false);
+      setSelectedBooking(null);
+    },
+    onError: () => {
+      toast.error('Failed to update payment information');
+    },
+  });
+
   const filteredBookings = bookings.filter(booking => {
     const statusMatch = statusFilter === 'all' || booking.status === statusFilter;
+    const paymentMatch = paymentStatusFilter === 'all' || booking.payment_status === paymentStatusFilter;
     
     const bookingDate = new Date(booking.created_date);
     const startMatch = !startDate || bookingDate >= new Date(startDate);
@@ -50,7 +68,7 @@ export default function Admin() {
       booking.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       booking.email.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return statusMatch && startMatch && endMatch && searchMatch;
+    return statusMatch && paymentMatch && startMatch && endMatch && searchMatch;
   });
 
   // Pagination
@@ -62,7 +80,19 @@ export default function Admin() {
   // Reset to page 1 when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, startDate, endDate, searchQuery]);
+  }, [statusFilter, paymentStatusFilter, startDate, endDate, searchQuery]);
+
+  const handleOpenPaymentDialog = (booking) => {
+    setSelectedBooking(booking);
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleSavePayment = (paymentData) => {
+    updatePaymentMutation.mutate({
+      id: selectedBooking.id,
+      paymentData,
+    });
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -93,6 +123,8 @@ export default function Admin() {
   };
 
   const totalRevenue = filteredBookings.reduce((sum, booking) => sum + (booking.total_price || 0), 0);
+  const totalPaid = filteredBookings.reduce((sum, booking) => sum + (booking.amount_paid || 0), 0);
+  const totalOutstanding = totalRevenue - totalPaid;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black py-12 px-6">
@@ -104,7 +136,7 @@ export default function Admin() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card className="bg-zinc-900 border-green-600/30">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-gray-400 font-bold uppercase">Total Bookings</CardTitle>
@@ -127,21 +159,28 @@ export default function Admin() {
 
           <Card className="bg-zinc-900 border-green-600/30">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-gray-400 font-bold uppercase">Pending</CardTitle>
+              <CardTitle className="text-sm text-gray-400 font-bold uppercase">Total Revenue</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-yellow-500">
-                {filteredBookings.filter(b => b.status === 'pending').length}
-              </div>
+              <div className="text-3xl font-black text-yellow-400">${totalRevenue.toLocaleString()}</div>
             </CardContent>
           </Card>
 
           <Card className="bg-zinc-900 border-green-600/30">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-gray-400 font-bold uppercase">Total Revenue</CardTitle>
+              <CardTitle className="text-sm text-gray-400 font-bold uppercase">Total Paid</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-yellow-400">${totalRevenue.toLocaleString()}</div>
+              <div className="text-3xl font-black text-green-400">${totalPaid.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-900 border-green-600/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-gray-400 font-bold uppercase">Outstanding</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black text-orange-400">${totalOutstanding.toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
@@ -168,9 +207,9 @@ export default function Admin() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <Label className="text-white font-bold mb-2 block uppercase text-sm">Status</Label>
+                <Label className="text-white font-bold mb-2 block uppercase text-sm">Booking Status</Label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="bg-black border-zinc-700 text-white">
                     <SelectValue placeholder="All Statuses" />
@@ -179,6 +218,22 @@ export default function Admin() {
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-white font-bold mb-2 block uppercase text-sm">Payment Status</Label>
+                <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+                  <SelectTrigger className="bg-black border-zinc-700 text-white">
+                    <SelectValue placeholder="All Payment Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Payment Statuses</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="partially_paid">Partially Paid</SelectItem>
+                    <SelectItem value="pending">Payment Pending</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
@@ -232,7 +287,7 @@ export default function Admin() {
                         <TableHead className="text-gray-400 font-bold uppercase">Contact</TableHead>
                         <TableHead className="text-gray-400 font-bold uppercase">Package</TableHead>
                         <TableHead className="text-gray-400 font-bold uppercase">Details</TableHead>
-                        <TableHead className="text-gray-400 font-bold uppercase">Price</TableHead>
+                        <TableHead className="text-gray-400 font-bold uppercase">Payment</TableHead>
                         <TableHead className="text-gray-400 font-bold uppercase">Status</TableHead>
                         <TableHead className="text-gray-400 font-bold uppercase">Actions</TableHead>
                       </TableRow>
@@ -277,8 +332,25 @@ export default function Admin() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-yellow-400 font-black text-lg">
-                          ${booking.total_price?.toLocaleString()}
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-yellow-400 font-black text-lg">
+                              ${booking.total_price?.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-green-400">
+                              Paid: ${(booking.amount_paid || 0).toLocaleString()}
+                            </div>
+                            {booking.amount_paid < booking.total_price && (
+                              <div className="text-sm text-orange-400">
+                                Due: ${(booking.total_price - (booking.amount_paid || 0)).toLocaleString()}
+                              </div>
+                            )}
+                            {booking.due_date && (
+                              <div className="text-xs text-gray-400">
+                                Due: {format(new Date(booking.due_date), 'MMM d, yyyy')}
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-2">
@@ -291,19 +363,29 @@ export default function Admin() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={booking.status}
-                            onValueChange={(value) => updateStatusMutation.mutate({ id: booking.id, status: value })}
-                          >
-                            <SelectTrigger className="bg-black border-zinc-700 text-white w-32 h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="confirmed">Confirmed</SelectItem>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="space-y-2">
+                            <Select
+                              value={booking.status}
+                              onValueChange={(value) => updateStatusMutation.mutate({ id: booking.id, status: value })}
+                            >
+                              <SelectTrigger className="bg-black border-zinc-700 text-white w-32 h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              onClick={() => handleOpenPaymentDialog(booking)}
+                              className="bg-green-600 hover:bg-green-700 text-white w-32 h-8 text-xs font-bold"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Record Payment
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -376,6 +458,19 @@ export default function Admin() {
             )}
           </CardContent>
         </Card>
+
+        {/* Payment Dialog */}
+        {selectedBooking && (
+          <PaymentDialog
+            booking={selectedBooking}
+            isOpen={isPaymentDialogOpen}
+            onClose={() => {
+              setIsPaymentDialogOpen(false);
+              setSelectedBooking(null);
+            }}
+            onSave={handleSavePayment}
+          />
+        )}
       </div>
     </div>
   );
