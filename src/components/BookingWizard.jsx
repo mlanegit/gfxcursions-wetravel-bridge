@@ -69,38 +69,44 @@ export default function BookingWizard({ onClose }) {
   };
 
   const handleBookNow = async () => {
-  setIsSubmitting(true);
-
-  try {
-    const response = await fetch("/api/create-booking", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        // Minimal payload for redirect test
-        tripId: "0062792714",
-        packageId: "TEST",
-        firstName: bookingData.name?.split(" ")[0] || "Test",
-        lastName: bookingData.name?.split(" ").slice(1).join(" ") || "User",
+    setIsSubmitting(true);
+    
+    try {
+      // Store booking in Base44
+      const booking = await base44.entities.Booking.create({
+        name: bookingData.name,
         email: bookingData.email,
-        phone: bookingData.phone || "",
-        tshirtSize: "M"
-      })
-    });
+        phone: bookingData.phone || '',
+        package: bookingData.packageType,
+        nights: bookingData.nights,
+        occupancy: bookingData.occupancy,
+        guests: bookingData.guests,
+        price_per_person: getPrice(),
+        total_price: getTotalPrice(),
+        payment_status: 'pending',
+        status: 'pending',
+      });
 
-    const data = await response.json();
+      // Build WeTravel checkout URL with pre-filled info
+      const wetravelUrl = new URL('https://gfxcursions.wetravel.com/trips/test-lost-in-jamaica-gfx-0062792714');
+      wetravelUrl.searchParams.set('email', bookingData.email);
+      wetravelUrl.searchParams.set('first_name', bookingData.name.split(' ')[0]);
+      wetravelUrl.searchParams.set('last_name', bookingData.name.split(' ').slice(1).join(' ') || bookingData.name.split(' ')[0]);
 
-    console.log("Redirect URL:", data.checkout_url);
+      toast.success('Redirecting to payment...');
+      
+      // Redirect to WeTravel
+      setTimeout(() => {
+        window.location.href = wetravelUrl.toString();
+      }, 500);
+      
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error('Something went wrong. Please try again or contact support.');
+      setIsSubmitting(false);
+    }
+  };
 
-    // ✅ THIS is the only thing we are validating right now
-    window.location.href = data.checkout_url;
-
-  } catch (error) {
-    console.error("Redirect test failed:", error);
-    toast.error("Unable to continue to checkout. Please try again.");
-    setIsSubmitting(false);
-  }
-};
-  
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
