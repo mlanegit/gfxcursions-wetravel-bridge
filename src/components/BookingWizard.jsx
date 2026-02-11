@@ -23,6 +23,12 @@ export default function BookingWizard({ onClose }) {
     countryCode: '+1',
     phone: '',
     tshirtSize: '',
+    guest2FirstName: '',
+    guest2LastName: '',
+    guest2Email: '',
+    guest2CountryCode: '+1',
+    guest2Phone: '',
+    guest2TshirtSize: '',
     bedPreference: '',
     referredBy: '',
     celebratingBirthday: '',
@@ -86,7 +92,7 @@ export default function BookingWizard({ onClose }) {
     
     try {
       // Store booking in Base44
-      const booking = await base44.entities.Booking.create({
+      const bookingPayload = {
         first_name: bookingData.firstName,
         last_name: bookingData.lastName,
         email: bookingData.email,
@@ -110,7 +116,18 @@ export default function BookingWizard({ onClose }) {
         total_price: getTotalPrice(),
         payment_status: 'pending',
         status: 'confirmed',
-      });
+      };
+
+      // Add second guest info if double occupancy
+      if (bookingData.occupancy === 'double') {
+        bookingPayload.guest2_first_name = bookingData.guest2FirstName;
+        bookingPayload.guest2_last_name = bookingData.guest2LastName;
+        bookingPayload.guest2_email = bookingData.guest2Email;
+        bookingPayload.guest2_phone = `${bookingData.guest2CountryCode} ${bookingData.guest2Phone}`;
+        bookingPayload.guest2_tshirt_size = bookingData.guest2TshirtSize;
+      }
+
+      const booking = await base44.entities.Booking.create(bookingPayload);
 
       toast.success('Booking confirmed! We\'ll contact you shortly.');
       
@@ -128,6 +145,12 @@ export default function BookingWizard({ onClose }) {
           countryCode: '+1',
           phone: '',
           tshirtSize: '',
+          guest2FirstName: '',
+          guest2LastName: '',
+          guest2Email: '',
+          guest2CountryCode: '+1',
+          guest2Phone: '',
+          guest2TshirtSize: '',
           bedPreference: '',
           referredBy: '',
           celebratingBirthday: '',
@@ -153,7 +176,14 @@ export default function BookingWizard({ onClose }) {
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
-    if (step === 3) return bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
+    if (step === 3) {
+      const guest1Valid = bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
+      if (bookingData.occupancy === 'double') {
+        const guest2Valid = bookingData.guest2FirstName && bookingData.guest2LastName && bookingData.guest2Email && bookingData.guest2Phone;
+        return guest1Valid && guest2Valid;
+      }
+      return guest1Valid;
+    }
     return true;
   };
 
@@ -479,6 +509,112 @@ export default function BookingWizard({ onClose }) {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Second Guest Information - Only for Double Occupancy */}
+                    {bookingData.occupancy === 'double' && (
+                      <div className="border-t border-green-600/30 pt-6 mt-6">
+                        <h4 className="text-white font-black uppercase text-lg mb-4 flex items-center gap-2">
+                          <Users className="w-5 h-5 text-green-500" />
+                          Second Guest Information
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                                First Name *
+                              </Label>
+                              <Input
+                                value={bookingData.guest2FirstName}
+                                onChange={(e) => setBookingData({ ...bookingData, guest2FirstName: e.target.value })}
+                                className="bg-black border-zinc-700 text-white"
+                                placeholder="Jane"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                                Last Name *
+                              </Label>
+                              <Input
+                                value={bookingData.guest2LastName}
+                                onChange={(e) => setBookingData({ ...bookingData, guest2LastName: e.target.value })}
+                                className="bg-black border-zinc-700 text-white"
+                                placeholder="Doe"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                              Email Address *
+                            </Label>
+                            <Input
+                              type="email"
+                              value={bookingData.guest2Email}
+                              onChange={(e) => setBookingData({ ...bookingData, guest2Email: e.target.value })}
+                              className="bg-black border-zinc-700 text-white"
+                              placeholder="jane@example.com"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                              Phone Number *
+                            </Label>
+                            <div className="flex gap-2">
+                              <Select
+                                value={bookingData.guest2CountryCode}
+                                onValueChange={(value) => setBookingData({ ...bookingData, guest2CountryCode: value })}
+                              >
+                                <SelectTrigger className="bg-black border-zinc-700 text-white w-24">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="+1">+1 (US)</SelectItem>
+                                  <SelectItem value="+44">+44 (UK)</SelectItem>
+                                  <SelectItem value="+1-876">+1-876 (JM)</SelectItem>
+                                  <SelectItem value="+91">+91 (IN)</SelectItem>
+                                  <SelectItem value="+86">+86 (CN)</SelectItem>
+                                  <SelectItem value="+61">+61 (AU)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                type="tel"
+                                value={bookingData.guest2Phone}
+                                onChange={(e) => setBookingData({ ...bookingData, guest2Phone: e.target.value })}
+                                className="bg-black border-zinc-700 text-white flex-1"
+                                placeholder="555-987-6543"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-white font-bold mb-2 block uppercase text-sm">
+                              T-Shirt Size
+                            </Label>
+                            <Select
+                              value={bookingData.guest2TshirtSize}
+                              onValueChange={(value) => setBookingData({ ...bookingData, guest2TshirtSize: value })}
+                            >
+                              <SelectTrigger className="bg-black border-zinc-700 text-white">
+                                <SelectValue placeholder="Select size" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="XS">XS</SelectItem>
+                                <SelectItem value="S">S</SelectItem>
+                                <SelectItem value="M">M</SelectItem>
+                                <SelectItem value="L">L</SelectItem>
+                                <SelectItem value="XL">XL</SelectItem>
+                                <SelectItem value="XXL">XXL</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <Label className="text-white font-bold mb-2 block uppercase text-sm">
