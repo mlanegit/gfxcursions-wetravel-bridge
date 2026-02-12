@@ -74,6 +74,14 @@ export default function Layout({ children, currentPageName }) {
             >
               Guest Portal
             </Link>
+            <Link 
+              to={createPageUrl('Admin')} 
+              className={`text-sm font-bold tracking-wide transition-colors uppercase ${
+                currentPageName === 'Admin' ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
+              }`}
+            >
+              Admin
+            </Link>
           </nav>
 
           {/* Book Now Button */}

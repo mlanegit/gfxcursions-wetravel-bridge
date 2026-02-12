@@ -54,6 +54,7 @@ import Gallery from './pages/Gallery';
 import Home from './pages/Home';
 import Packages from './pages/Packages';
 import GuestPortal from './pages/GuestPortal';
+import EmailSettings from './pages/EmailSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -65,6 +66,7 @@ export const PAGES = {
     "Home": Home,
     "Packages": Packages,
     "GuestPortal": GuestPortal,
+    "EmailSettings": EmailSettings,
 }
 
 export const pagesConfig = {
