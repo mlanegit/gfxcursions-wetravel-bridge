@@ -21,6 +21,7 @@ export default function BookingDetailsDialog({ booking, isOpen, onClose }) {
       case 'paid': return 'bg-green-600';
       case 'partially_paid': return 'bg-yellow-600';
       case 'pending': return 'bg-orange-600';
+      case 'refunded': return 'bg-blue-600';
       case 'cancelled': return 'bg-red-600';
       default: return 'bg-gray-600';
     }

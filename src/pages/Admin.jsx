@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import PaymentDialog from '../components/PaymentDialog';
 import BookingDetailsDialog from '../components/BookingDetailsDialog';
 import CancelBookingDialog from '../components/CancelBookingDialog';
+import RefundDialog from '../components/RefundDialog';
 
 export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -27,6 +28,7 @@ export default function Admin() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const bookingsPerPage = 10;
 
   const queryClient = useQueryClient();
@@ -129,6 +131,11 @@ export default function Admin() {
     setIsCancelDialogOpen(true);
   };
 
+  const handleOpenRefundDialog = (booking) => {
+    setSelectedBooking(booking);
+    setIsRefundDialogOpen(true);
+  };
+
   const handleCancelBooking = (reason) => {
     cancelBookingMutation.mutate({ id: selectedBooking.id, reason });
   };
@@ -138,6 +145,14 @@ export default function Admin() {
       id: selectedBooking.id,
       paymentData,
     });
+  };
+
+  const handleSaveRefund = (refundData) => {
+    updatePaymentMutation.mutate({
+      id: selectedBooking.id,
+      paymentData: refundData,
+    });
+    setIsRefundDialogOpen(false);
   };
 
   const getStatusColor = (status) => {
@@ -154,6 +169,7 @@ export default function Admin() {
       case 'paid': return 'bg-green-600';
       case 'partially_paid': return 'bg-yellow-600';
       case 'pending': return 'bg-orange-600';
+      case 'refunded': return 'bg-blue-600';
       case 'cancelled': return 'bg-red-600';
       default: return 'bg-gray-600';
     }
@@ -312,6 +328,7 @@ export default function Admin() {
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="partially_paid">Partially Paid</SelectItem>
                     <SelectItem value="pending">Payment Pending</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
@@ -483,6 +500,17 @@ export default function Admin() {
                                 Cancel Booking
                               </Button>
                             )}
+                            {booking.status === 'cancelled' && booking.amount_paid > 0 && booking.payment_status !== 'refunded' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenRefundDialog(booking)}
+                                className="border-blue-600 text-blue-500 hover:bg-blue-600 hover:text-white w-32 h-8 text-xs font-bold"
+                              >
+                                <DollarSign className="w-3 h-3 mr-1" />
+                                Record Refund
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -593,6 +621,19 @@ export default function Admin() {
             }}
             onConfirm={handleCancelBooking}
             isAdmin={true}
+          />
+        )}
+
+        {/* Refund Dialog */}
+        {selectedBooking && (
+          <RefundDialog
+            booking={selectedBooking}
+            isOpen={isRefundDialogOpen}
+            onClose={() => {
+              setIsRefundDialogOpen(false);
+              setSelectedBooking(null);
+            }}
+            onSave={handleSaveRefund}
           />
         )}
       </div>
