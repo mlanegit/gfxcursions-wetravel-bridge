@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
+import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight, Edit, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import PaymentDialog from '../components/PaymentDialog';
+import BookingDetailsDialog from '../components/BookingDetailsDialog';
 
 export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -22,6 +23,7 @@ export default function Admin() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const bookingsPerPage = 10;
 
   const queryClient = useQueryClient();
@@ -86,6 +88,11 @@ export default function Admin() {
   const handleOpenPaymentDialog = (booking) => {
     setSelectedBooking(booking);
     setIsPaymentDialogOpen(true);
+  };
+
+  const handleOpenDetailsDialog = (booking) => {
+    setSelectedBooking(booking);
+    setIsDetailsDialogOpen(true);
   };
 
   const handleSavePayment = (paymentData) => {
@@ -295,7 +302,7 @@ export default function Admin() {
                     </TableHeader>
                     <TableBody>
                       {paginatedBookings.map((booking) => (
-                      <TableRow key={booking.id} className="border-zinc-800 hover:bg-zinc-800/50">
+                      <TableRow key={booking.id} className="border-zinc-800 hover:bg-zinc-800/50 cursor-pointer" onClick={() => handleOpenDetailsDialog(booking)}>
                         <TableCell className="text-white">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-green-500" />
@@ -363,8 +370,17 @@ export default function Admin() {
                             </Badge>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="space-y-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenDetailsDialog(booking)}
+                              className="border-green-600 text-green-500 hover:bg-green-600 hover:text-white w-32 h-8 text-xs font-bold"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              View Details
+                            </Button>
                             <Select
                               value={booking.status}
                               onValueChange={(value) => updateStatusMutation.mutate({ id: booking.id, status: value })}
@@ -470,6 +486,18 @@ export default function Admin() {
               setSelectedBooking(null);
             }}
             onSave={handleSavePayment}
+          />
+        )}
+
+        {/* Booking Details Dialog */}
+        {selectedBooking && (
+          <BookingDetailsDialog
+            booking={selectedBooking}
+            isOpen={isDetailsDialogOpen}
+            onClose={() => {
+              setIsDetailsDialogOpen(false);
+              setSelectedBooking(null);
+            }}
           />
         )}
       </div>
