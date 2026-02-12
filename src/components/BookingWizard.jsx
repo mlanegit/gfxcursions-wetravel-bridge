@@ -17,6 +17,7 @@ export default function BookingWizard({ onClose }) {
     nights: '',
     occupancy: '',
     guests: 1,
+    paymentType: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -80,7 +81,7 @@ export default function BookingWizard({ onClose }) {
   };
 
   const handleNext = () => {
-    if (step < 4) setStep(step + 1);
+    if (step < 5) setStep(step + 1);
   };
 
   const handleBack = () => {
@@ -114,6 +115,7 @@ export default function BookingWizard({ onClose }) {
         guests: bookingData.guests,
         price_per_person: getPrice(),
         total_price: getTotalPrice(),
+        payment_type: bookingData.paymentType,
         payment_status: 'pending',
         status: 'confirmed',
       };
@@ -139,6 +141,7 @@ export default function BookingWizard({ onClose }) {
           nights: '',
           occupancy: '',
           guests: 1,
+          paymentType: '',
           firstName: '',
           lastName: '',
           email: '',
@@ -176,7 +179,8 @@ export default function BookingWizard({ onClose }) {
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
-    if (step === 3) {
+    if (step === 3) return bookingData.paymentType;
+    if (step === 4) {
       const guest1Valid = bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
       if (bookingData.occupancy === 'double') {
         const guest2Valid = bookingData.guest2FirstName && bookingData.guest2LastName && bookingData.guest2Email && bookingData.guest2Phone;
@@ -215,14 +219,14 @@ export default function BookingWizard({ onClose }) {
             
             {/* Progress Steps */}
             <div className="flex items-center gap-4 mt-6">
-              {[1, 2, 3, 4].map((num) => (
+              {[1, 2, 3, 4, 5].map((num) => (
                 <div key={num} className="flex items-center flex-1">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                     step >= num ? 'bg-green-600 border-green-600 text-white' : 'border-zinc-700 text-gray-500'
                   } font-bold`}>
                     {step > num ? <Check className="w-5 h-5" /> : num}
                   </div>
-                  {num < 4 && (
+                  {num < 5 && (
                     <div className={`flex-1 h-1 mx-2 ${
                       step > num ? 'bg-green-600' : 'bg-zinc-700'
                     }`} />
@@ -233,8 +237,9 @@ export default function BookingWizard({ onClose }) {
             <div className="flex justify-between mt-2 text-xs font-bold uppercase">
               <span className={step >= 1 ? 'text-green-500' : 'text-gray-500'}>Package</span>
               <span className={step >= 2 ? 'text-green-500' : 'text-gray-500'}>Occupancy</span>
-              <span className={step >= 3 ? 'text-green-500' : 'text-gray-500'}>Your Info</span>
-              <span className={step >= 4 ? 'text-green-500' : 'text-gray-500'}>Confirm</span>
+              <span className={step >= 3 ? 'text-green-500' : 'text-gray-500'}>Payment</span>
+              <span className={step >= 4 ? 'text-green-500' : 'text-gray-500'}>Your Info</span>
+              <span className={step >= 5 ? 'text-green-500' : 'text-gray-500'}>Confirm</span>
             </div>
           </CardHeader>
 
@@ -401,8 +406,95 @@ export default function BookingWizard({ onClose }) {
                 </motion.div>
               )}
 
-              {/* Step 3: Contact & Personal Information */}
+              {/* Step 3: Payment Type */}
               {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <h3 className="text-white font-black text-xl uppercase mb-4">
+                    Select Payment Option
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div
+                      onClick={() => setBookingData({ ...bookingData, paymentType: 'full' })}
+                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                        bookingData.paymentType === 'full'
+                          ? 'border-green-600 bg-green-600/10'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <DollarSign className="w-6 h-6 text-green-500" />
+                            <h4 className="text-white font-black text-lg">Full Payment</h4>
+                          </div>
+                          <p className="text-gray-400 text-sm">Pay the entire amount now</p>
+                          <p className="text-yellow-400 font-bold mt-2">
+                            ${getTotalPrice().toLocaleString()}
+                          </p>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 ${
+                          bookingData.paymentType === 'full'
+                            ? 'border-green-600 bg-green-600'
+                            : 'border-zinc-600'
+                        } flex items-center justify-center`}>
+                          {bookingData.paymentType === 'full' && (
+                            <Check className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setBookingData({ ...bookingData, paymentType: 'partial' })}
+                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                        bookingData.paymentType === 'partial'
+                          ? 'border-green-600 bg-green-600/10'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <DollarSign className="w-6 h-6 text-green-500" />
+                            <h4 className="text-white font-black text-lg">Partial Payment</h4>
+                          </div>
+                          <p className="text-gray-400 text-sm">Pay a deposit now, rest later</p>
+                          <p className="text-yellow-400 font-bold mt-2">
+                            Deposit: ${(getTotalPrice() * 0.5).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 ${
+                          bookingData.paymentType === 'partial'
+                            ? 'border-green-600 bg-green-600'
+                            : 'border-zinc-600'
+                        } flex items-center justify-center`}>
+                          {bookingData.paymentType === 'partial' && (
+                            <Check className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-4">
+                    <p className="text-white text-sm">
+                      <span className="font-black">Note:</span> {bookingData.paymentType === 'partial' 
+                        ? 'You will be charged 50% now, and the remaining balance will be due before your arrival.'
+                        : 'You will be charged the full amount after completing your booking.'}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 4: Contact & Personal Information */}
+              {step === 4 && (
                 <motion.div
                   key="step3"
                   initial={{ opacity: 0, x: 20 }}
@@ -770,8 +862,8 @@ export default function BookingWizard({ onClose }) {
                 </motion.div>
               )}
 
-              {/* Step 4: Summary */}
-              {step === 4 && (
+              {/* Step 5: Summary */}
+              {step === 5 && (
                 <motion.div
                   key="step4"
                   initial={{ opacity: 0, x: 20 }}
@@ -844,10 +936,24 @@ export default function BookingWizard({ onClose }) {
                       <span className="text-white font-bold">${getPrice().toLocaleString()}</span>
                     </div>
 
+                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="w-5 h-5 text-green-500" />
+                        <span className="text-gray-400">Payment Option</span>
+                      </div>
+                      <span className="text-white font-bold">
+                        {bookingData.paymentType === 'full' ? 'Full Payment' : 'Partial Payment (50% Deposit)'}
+                      </span>
+                    </div>
+
                     <div className="flex items-center justify-between pt-4">
-                      <span className="text-white font-black text-xl uppercase">Total</span>
+                      <span className="text-white font-black text-xl uppercase">
+                        {bookingData.paymentType === 'partial' ? 'Deposit Due Today' : 'Total'}
+                      </span>
                       <span className="text-yellow-400 font-black text-2xl">
-                        ${getTotalPrice().toLocaleString()}
+                        ${bookingData.paymentType === 'partial' 
+                          ? (getTotalPrice() * 0.5).toLocaleString() 
+                          : getTotalPrice().toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -874,7 +980,7 @@ export default function BookingWizard({ onClose }) {
                 {step === 1 ? 'Cancel' : 'Back'}
               </Button>
 
-              {step < 4 ? (
+              {step < 5 ? (
                 <Button
                   onClick={handleNext}
                   disabled={!canProceed()}
