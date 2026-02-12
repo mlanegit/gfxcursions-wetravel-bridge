@@ -252,6 +252,35 @@ export default function BookingDetailsDialog({ booking, isOpen, onClose }) {
                 <p className="text-gray-400 text-xs">Payment Due Date: <span className="text-white font-bold">{format(new Date(booking.due_date), 'MMMM d, yyyy')}</span></p>
               </div>
             )}
+
+            {/* Refund Information */}
+            {booking.refund_amount && (
+              <div className="mt-4 bg-blue-900/30 border border-blue-600/30 p-4 rounded-lg space-y-2">
+                <h5 className="text-blue-400 font-bold uppercase text-xs">Refund Details</h5>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Refund Amount:</span>
+                  <span className="text-blue-400 font-bold">${booking.refund_amount?.toLocaleString()}</span>
+                </div>
+                {booking.refund_date && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Refund Date:</span>
+                    <span className="text-white">{format(new Date(booking.refund_date), 'MMM d, yyyy')}</span>
+                  </div>
+                )}
+                {booking.refund_method && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Refund Method:</span>
+                    <span className="text-white capitalize">{booking.refund_method.replace('_', ' ')}</span>
+                  </div>
+                )}
+                {booking.refund_notes && (
+                  <div className="text-sm pt-2 border-t border-blue-600/20">
+                    <span className="text-gray-400">Notes:</span>
+                    <p className="text-white mt-1">{booking.refund_notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
