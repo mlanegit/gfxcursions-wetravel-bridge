@@ -198,9 +198,19 @@ export default function Admin() {
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black py-12 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-black text-white uppercase mb-2">Booking Management</h1>
-          <p className="text-gray-400">View and manage all retreat bookings</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-black text-white uppercase mb-2">Booking Management</h1>
+            <p className="text-gray-400">View and manage all retreat bookings</p>
+          </div>
+          <Button
+            onClick={() => window.location.href = createPageUrl('EmailSettings')}
+            variant="outline"
+            className="border-green-600 text-green-500 hover:bg-green-600 hover:text-white font-bold"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Email Settings
+          </Button>
         </div>
 
         {/* Stats Cards */}
