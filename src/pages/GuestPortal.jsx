@@ -20,16 +20,19 @@ import {
   FileText,
   Clock,
   CreditCard,
-  Loader2
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import GuestInfoEditor from '../components/GuestInfoEditor';
+import CancelBookingDialog from '../components/CancelBookingDialog';
 
 export default function GuestPortal() {
   const [email, setEmail] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -52,6 +55,24 @@ export default function GuestPortal() {
       return bookings[0];
     },
     enabled: isAuthenticated && !!email,
+  });
+
+  const cancelBookingMutation = useMutation({
+    mutationFn: async (reason) => {
+      await base44.entities.Booking.update(booking.id, {
+        status: 'cancelled',
+        payment_status: 'cancelled',
+        notes: booking.notes ? `${booking.notes}\n\nCancellation Reason: ${reason}` : `Cancellation Reason: ${reason}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guestBooking'] });
+      toast.success('Booking cancelled successfully');
+      setIsCancelDialogOpen(false);
+    },
+    onError: () => {
+      toast.error('Failed to cancel booking');
+    },
   });
 
   const handleAccessPortal = async (e) => {
@@ -272,6 +293,18 @@ export default function GuestPortal() {
 
           {/* Booking Details Tab */}
           <TabsContent value="booking">
+            {booking?.status !== 'cancelled' && (
+              <div className="mb-6">
+                <Button
+                  onClick={() => setIsCancelDialogOpen(true)}
+                  variant="outline"
+                  className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white"
+                >
+                  <XCircle className="w-4 h-4 mr-2" />
+                  Cancel Booking
+                </Button>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
@@ -545,6 +578,15 @@ export default function GuestPortal() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Cancel Booking Dialog */}
+        <CancelBookingDialog
+          booking={booking}
+          isOpen={isCancelDialogOpen}
+          onClose={() => setIsCancelDialogOpen(false)}
+          onConfirm={cancelBookingMutation.mutate}
+          isAdmin={user?.role === 'admin'}
+        />
       </div>
     </div>
   );

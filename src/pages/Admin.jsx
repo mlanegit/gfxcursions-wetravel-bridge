@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight, Edit, Eye } from 'lucide-react';
+import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight, Edit, Eye, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import PaymentDialog from '../components/PaymentDialog';
 import BookingDetailsDialog from '../components/BookingDetailsDialog';
+import CancelBookingDialog from '../components/CancelBookingDialog';
 
 export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -24,6 +25,7 @@ export default function Admin() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const bookingsPerPage = 10;
 
   const queryClient = useQueryClient();
@@ -64,6 +66,26 @@ export default function Admin() {
     },
   });
 
+  const cancelBookingMutation = useMutation({
+    mutationFn: async ({ id, reason }) => {
+      const booking = bookings.find(b => b.id === id);
+      await base44.entities.Booking.update(id, {
+        status: 'cancelled',
+        payment_status: 'cancelled',
+        notes: booking.notes ? `${booking.notes}\n\nCancellation Reason (Admin): ${reason}` : `Cancellation Reason (Admin): ${reason}`,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      toast.success('Booking cancelled');
+      setIsCancelDialogOpen(false);
+      setSelectedBooking(null);
+    },
+    onError: () => {
+      toast.error('Failed to cancel booking');
+    },
+  });
+
   const filteredBookings = bookings.filter(booking => {
     const statusMatch = statusFilter === 'all' || booking.status === statusFilter;
     const paymentMatch = paymentStatusFilter === 'all' || booking.payment_status === paymentStatusFilter;
@@ -99,6 +121,15 @@ export default function Admin() {
   const handleOpenDetailsDialog = (booking) => {
     setSelectedBooking(booking);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handleOpenCancelDialog = (booking) => {
+    setSelectedBooking(booking);
+    setIsCancelDialogOpen(true);
+  };
+
+  const handleCancelBooking = (reason) => {
+    cancelBookingMutation.mutate({ id: selectedBooking.id, reason });
   };
 
   const handleSavePayment = (paymentData) => {
@@ -430,6 +461,17 @@ export default function Admin() {
                               <Edit className="w-3 h-3 mr-1" />
                               Record Payment
                             </Button>
+                            {booking.status !== 'cancelled' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenCancelDialog(booking)}
+                                className="border-red-600 text-red-500 hover:bg-red-600 hover:text-white w-32 h-8 text-xs font-bold"
+                              >
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Cancel Booking
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -526,6 +568,20 @@ export default function Admin() {
               setIsDetailsDialogOpen(false);
               setSelectedBooking(null);
             }}
+          />
+        )}
+
+        {/* Cancel Booking Dialog */}
+        {selectedBooking && (
+          <CancelBookingDialog
+            booking={selectedBooking}
+            isOpen={isCancelDialogOpen}
+            onClose={() => {
+              setIsCancelDialogOpen(false);
+              setSelectedBooking(null);
+            }}
+            onConfirm={handleCancelBooking}
+            isAdmin={true}
           />
         )}
       </div>
