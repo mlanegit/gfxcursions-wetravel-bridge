@@ -66,6 +66,14 @@ export default function Layout({ children, currentPageName }) {
             >
               Contact
             </Link>
+            <Link 
+              to={createPageUrl('GuestPortal')} 
+              className={`text-sm font-bold tracking-wide transition-colors uppercase ${
+                currentPageName === 'GuestPortal' ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
+              }`}
+            >
+              Guest Portal
+            </Link>
           </nav>
 
           {/* Book Now Button */}

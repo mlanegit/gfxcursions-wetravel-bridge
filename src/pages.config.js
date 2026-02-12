@@ -53,6 +53,7 @@ import Events from './pages/Events';
 import Gallery from './pages/Gallery';
 import Home from './pages/Home';
 import Packages from './pages/Packages';
+import GuestPortal from './pages/GuestPortal';
 import __Layout from './Layout.jsx';
 
 
@@ -63,6 +64,7 @@ export const PAGES = {
     "Gallery": Gallery,
     "Home": Home,
     "Packages": Packages,
+    "GuestPortal": GuestPortal,
 }
 
 export const pagesConfig = {
