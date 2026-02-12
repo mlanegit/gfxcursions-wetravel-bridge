@@ -28,10 +28,16 @@ export default function Admin() {
 
   const queryClient = useQueryClient();
 
+  const { data: user, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['bookings'],
     queryFn: () => base44.entities.Booking.list('-created_date'),
     initialData: [],
+    enabled: user?.role === 'admin',
   });
 
   const updateStatusMutation = useMutation({
@@ -133,6 +139,28 @@ export default function Admin() {
   const totalRevenue = filteredBookings.reduce((sum, booking) => sum + (booking.total_price || 0), 0);
   const totalPaid = filteredBookings.reduce((sum, booking) => sum + (booking.amount_paid || 0), 0);
   const totalOutstanding = totalRevenue - totalPaid;
+
+  // Check if user is admin
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black flex items-center justify-center p-6">
+        <Card className="bg-zinc-900 border-red-600/30 max-w-md">
+          <CardContent className="pt-6 text-center">
+            <div className="text-red-500 text-xl font-bold mb-2">Access Denied</div>
+            <p className="text-gray-400">You must be an administrator to access this page.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black py-12 px-6">

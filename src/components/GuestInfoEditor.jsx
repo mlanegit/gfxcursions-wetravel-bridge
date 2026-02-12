@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,17 @@ import { Edit, Save, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GuestInfoEditor({ booking }) {
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch {
+        return null;
+      }
+    },
+  });
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     phone: booking?.phone || '',
@@ -43,6 +54,12 @@ export default function GuestInfoEditor({ booking }) {
   });
 
   const handleSave = () => {
+    // Check permissions before saving
+    const canEdit = user?.role === 'admin' || user?.email === booking?.email;
+    if (!canEdit) {
+      toast.error('You do not have permission to edit this booking');
+      return;
+    }
     updateMutation.mutate(formData);
   };
 

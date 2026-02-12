@@ -33,6 +33,17 @@ export default function GuestPortal() {
 
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch {
+        return null;
+      }
+    },
+  });
+
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
     queryKey: ['guestBooking', email],
     queryFn: async () => {
@@ -170,6 +181,9 @@ export default function GuestPortal() {
   const amountPaid = booking?.amount_paid || 0;
   const totalPrice = booking?.total_price || 0;
   const balance = totalPrice - amountPaid;
+
+  // Check if user can edit this booking (admin or booking owner)
+  const canEdit = user?.role === 'admin' || user?.email === booking?.email;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-black py-12 px-6">
@@ -447,7 +461,15 @@ export default function GuestPortal() {
 
           {/* Edit Info Tab */}
           <TabsContent value="edit">
-            <GuestInfoEditor booking={booking} />
+            {canEdit ? (
+              <GuestInfoEditor booking={booking} />
+            ) : (
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-gray-400">You don't have permission to edit this booking.</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Resources Tab */}
