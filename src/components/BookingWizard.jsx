@@ -17,7 +17,6 @@ export default function BookingWizard({ onClose }) {
     nights: '',
     occupancy: '',
     guests: 1,
-    paymentType: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -40,7 +39,6 @@ export default function BookingWizard({ onClose }) {
     departureAirline: '',
     departureDate: '',
     departureTime: '',
-    agreeToSavePayment: false,
   });
 
   const packages = [
@@ -82,7 +80,7 @@ export default function BookingWizard({ onClose }) {
   };
 
   const handleNext = () => {
-    if (step < 5) setStep(step + 1);
+    if (step < 4) setStep(step + 1);
   };
 
   const handleBack = () => {
@@ -90,45 +88,83 @@ export default function BookingWizard({ onClose }) {
   };
 
   const handleBookNow = async () => {
-    setIsSubmitting(true);
-    
-    try {
-      // Store booking in Base44
-      const bookingPayload = {
-        first_name: bookingData.firstName,
-        last_name: bookingData.lastName,
-        email: bookingData.email,
-        phone: `${bookingData.countryCode} ${bookingData.phone}`,
-        tshirt_size: bookingData.tshirtSize,
-        bed_preference: bookingData.bedPreference,
-        referred_by: bookingData.referredBy,
-        celebrating_birthday: bookingData.celebratingBirthday,
-        notes: bookingData.notes,
-        arrival_airline: bookingData.arrivalAirline,
-        arrival_date: bookingData.arrivalDate,
-        arrival_time: bookingData.arrivalTime,
-        departure_airline: bookingData.departureAirline,
-        departure_date: bookingData.departureDate,
-        departure_time: bookingData.departureTime,
-        package: bookingData.packageType,
-        nights: bookingData.nights,
-        occupancy: bookingData.occupancy,
-        guests: bookingData.guests,
-        price_per_person: getPrice(),
-        total_price: getTotalPrice(),
-        payment_type: bookingData.paymentType,
-        payment_status: 'pending',
-        status: 'confirmed',
-      };
+  setIsSubmitting(true);
 
-      // Add second guest info if double occupancy
-      if (bookingData.occupancy === 'double') {
-        bookingPayload.guest2_first_name = bookingData.guest2FirstName;
-        bookingPayload.guest2_last_name = bookingData.guest2LastName;
-        bookingPayload.guest2_email = bookingData.guest2Email;
-        bookingPayload.guest2_phone = `${bookingData.guest2CountryCode} ${bookingData.guest2Phone}`;
-        bookingPayload.guest2_tshirt_size = bookingData.guest2TshirtSize;
+  try {
+    // 1️⃣ Store booking in Base44 first
+    const bookingPayload = {
+      first_name: bookingData.firstName,
+      last_name: bookingData.lastName,
+      email: bookingData.email,
+      phone: `${bookingData.countryCode} ${bookingData.phone}`,
+      tshirt_size: bookingData.tshirtSize,
+      bed_preference: bookingData.bedPreference,
+      referred_by: bookingData.referredBy,
+      celebrating_birthday: bookingData.celebratingBirthday,
+      notes: bookingData.notes,
+      arrival_airline: bookingData.arrivalAirline,
+      arrival_date: bookingData.arrivalDate,
+      arrival_time: bookingData.arrivalTime,
+      departure_airline: bookingData.departureAirline,
+      departure_date: bookingData.departureDate,
+      departure_time: bookingData.departureTime,
+      package: bookingData.packageType,
+      nights: bookingData.nights,
+      occupancy: bookingData.occupancy,
+      guests: bookingData.guests,
+      price_per_person: getPrice(),
+      total_price: getTotalPrice(),
+      payment_status: 'pending',
+      status: 'initiated',
+    };
+
+    if (bookingData.occupancy === 'double') {
+      bookingPayload.guest2_first_name = bookingData.guest2FirstName;
+      bookingPayload.guest2_last_name = bookingData.guest2LastName;
+      bookingPayload.guest2_email = bookingData.guest2Email;
+      bookingPayload.guest2_phone = `${bookingData.guest2CountryCode} ${bookingData.guest2Phone}`;
+      bookingPayload.guest2_tshirt_size = bookingData.guest2TshirtSize;
+    }
+
+    const booking = await base44.entities.Booking.create(bookingPayload);
+
+    // 2️⃣ Create Stripe Checkout Session
+    const response = await fetch(
+      "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          name: `${bookingData.firstName} ${bookingData.lastName}`,
+          email: bookingData.email,
+          packageType: bookingData.packageType,
+          nights: bookingData.nights,
+          occupancy: bookingData.occupancy,
+          guests: bookingData.guests,
+          pricePerPerson: getPrice(),
+          totalPrice: getTotalPrice()
+        })
       }
+    );
+
+    const data = await response.json();
+
+    if (!data.url) {
+      throw new Error("Stripe session failed");
+    }
+
+    // 3️⃣ Redirect to Stripe
+    window.location.href = data.url;
+
+  } catch (error) {
+    console.error("Stripe error:", error);
+    toast.error("Something went wrong. Please try again.");
+    setIsSubmitting(false);
+  }
+};
 
       const booking = await base44.entities.Booking.create(bookingPayload);
 
@@ -142,7 +178,6 @@ export default function BookingWizard({ onClose }) {
           nights: '',
           occupancy: '',
           guests: 1,
-          paymentType: '',
           firstName: '',
           lastName: '',
           email: '',
@@ -165,7 +200,6 @@ export default function BookingWizard({ onClose }) {
           departureAirline: '',
           departureDate: '',
           departureTime: '',
-          agreeToSavePayment: false,
         });
         setStep(1);
         setIsSubmitting(false);
@@ -182,11 +216,6 @@ export default function BookingWizard({ onClose }) {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
     if (step === 3) {
-      if (!bookingData.paymentType) return false;
-      if ((bookingData.paymentType === 'deposit' || bookingData.paymentType === 'payment_plan') && !bookingData.agreeToSavePayment) return false;
-      return true;
-    }
-    if (step === 4) {
       const guest1Valid = bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
       if (bookingData.occupancy === 'double') {
         const guest2Valid = bookingData.guest2FirstName && bookingData.guest2LastName && bookingData.guest2Email && bookingData.guest2Phone;
@@ -225,14 +254,14 @@ export default function BookingWizard({ onClose }) {
             
             {/* Progress Steps */}
             <div className="flex items-center gap-4 mt-6">
-              {[1, 2, 3, 4, 5].map((num) => (
+              {[1, 2, 3, 4].map((num) => (
                 <div key={num} className="flex items-center flex-1">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                     step >= num ? 'bg-green-600 border-green-600 text-white' : 'border-zinc-700 text-gray-500'
                   } font-bold`}>
                     {step > num ? <Check className="w-5 h-5" /> : num}
                   </div>
-                  {num < 5 && (
+                  {num < 4 && (
                     <div className={`flex-1 h-1 mx-2 ${
                       step > num ? 'bg-green-600' : 'bg-zinc-700'
                     }`} />
@@ -243,9 +272,8 @@ export default function BookingWizard({ onClose }) {
             <div className="flex justify-between mt-2 text-xs font-bold uppercase">
               <span className={step >= 1 ? 'text-green-500' : 'text-gray-500'}>Package</span>
               <span className={step >= 2 ? 'text-green-500' : 'text-gray-500'}>Occupancy</span>
-              <span className={step >= 3 ? 'text-green-500' : 'text-gray-500'}>Payment</span>
-              <span className={step >= 4 ? 'text-green-500' : 'text-gray-500'}>Your Info</span>
-              <span className={step >= 5 ? 'text-green-500' : 'text-gray-500'}>Confirm</span>
+              <span className={step >= 3 ? 'text-green-500' : 'text-gray-500'}>Your Info</span>
+              <span className={step >= 4 ? 'text-green-500' : 'text-gray-500'}>Confirm</span>
             </div>
           </CardHeader>
 
@@ -412,150 +440,8 @@ export default function BookingWizard({ onClose }) {
                 </motion.div>
               )}
 
-              {/* Step 3: Payment Type */}
+              {/* Step 3: Contact & Personal Information */}
               {step === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <h3 className="text-white font-black text-xl uppercase mb-4">
-                    Select Payment Option
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div
-                      onClick={() => setBookingData({ ...bookingData, paymentType: 'full' })}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentType === 'full'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <DollarSign className="w-6 h-6 text-green-500" />
-                            <h4 className="text-white font-black text-lg">Full Payment</h4>
-                          </div>
-                          <p className="text-gray-400 text-sm">Pay the entire amount now</p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            ${getTotalPrice().toLocaleString()}
-                          </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 ${
-                          bookingData.paymentType === 'full'
-                            ? 'border-green-600 bg-green-600'
-                            : 'border-zinc-600'
-                        } flex items-center justify-center`}>
-                          {bookingData.paymentType === 'full' && (
-                            <Check className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setBookingData({ ...bookingData, paymentType: 'deposit' })}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentType === 'deposit'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <DollarSign className="w-6 h-6 text-green-500" />
-                            <h4 className="text-white font-black text-lg">Deposit</h4>
-                          </div>
-                          <p className="text-gray-400 text-sm">Pay 50% now, remainder before arrival</p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            Today: ${(getTotalPrice() * 0.5).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 ${
-                          bookingData.paymentType === 'deposit'
-                            ? 'border-green-600 bg-green-600'
-                            : 'border-zinc-600'
-                        } flex items-center justify-center`}>
-                          {bookingData.paymentType === 'deposit' && (
-                            <Check className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => setBookingData({ ...bookingData, paymentType: 'payment_plan' })}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentType === 'payment_plan'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <Calendar className="w-6 h-6 text-green-500" />
-                            <h4 className="text-white font-black text-lg">Payment Plan</h4>
-                            <span className="bg-yellow-400 text-black text-xs font-black px-2 py-1 rounded">
-                              FLEXIBLE
-                            </span>
-                          </div>
-                          <p className="text-gray-400 text-sm">Split into monthly installments</p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            Starting at ${Math.ceil(getTotalPrice() / 4).toLocaleString()}/month
-                          </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 ${
-                          bookingData.paymentType === 'payment_plan'
-                            ? 'border-green-600 bg-green-600'
-                            : 'border-zinc-600'
-                        } flex items-center justify-center`}>
-                          {bookingData.paymentType === 'payment_plan' && (
-                            <Check className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {(bookingData.paymentType === 'deposit' || bookingData.paymentType === 'payment_plan') && (
-                    <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
-                      <input
-                        type="checkbox"
-                        id="agreeToSavePayment"
-                        checked={bookingData.agreeToSavePayment}
-                        onChange={(e) => setBookingData({ ...bookingData, agreeToSavePayment: e.target.checked })}
-                        className="mt-1 w-4 h-4 rounded border-zinc-600 text-green-600 focus:ring-green-600 focus:ring-offset-zinc-900"
-                      />
-                      <label htmlFor="agreeToSavePayment" className="text-white text-sm cursor-pointer">
-                        I agree to save my payment method for automatic installment charges.
-                      </label>
-                    </div>
-                  )}
-
-                  <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-4">
-                    <p className="text-white text-sm">
-                      <span className="font-black">Note:</span> {
-                        bookingData.paymentType === 'full' 
-                          ? 'You will be charged the full amount after completing your booking.'
-                          : bookingData.paymentType === 'deposit'
-                          ? 'You will be charged 50% now, and the remaining balance will be due before your arrival.'
-                          : bookingData.paymentType === 'payment_plan'
-                          ? 'Your total will be split into 4 monthly installments. First payment will be charged today.'
-                          : ''
-                      }
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 4: Contact & Personal Information */}
-              {step === 4 && (
                 <motion.div
                   key="step3"
                   initial={{ opacity: 0, x: 20 }}
@@ -923,8 +809,8 @@ export default function BookingWizard({ onClose }) {
                 </motion.div>
               )}
 
-              {/* Step 5: Summary */}
-              {step === 5 && (
+              {/* Step 4: Summary */}
+              {step === 4 && (
                 <motion.div
                   key="step4"
                   initial={{ opacity: 0, x: 20 }}
@@ -997,30 +883,10 @@ export default function BookingWizard({ onClose }) {
                       <span className="text-white font-bold">${getPrice().toLocaleString()}</span>
                     </div>
 
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <DollarSign className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Payment Option</span>
-                      </div>
-                      <span className="text-white font-bold">
-                        {bookingData.paymentType === 'full' 
-                          ? 'Full Payment' 
-                          : bookingData.paymentType === 'deposit'
-                          ? 'Deposit (50%)'
-                          : 'Payment Plan (4 Installments)'}
-                      </span>
-                    </div>
-
                     <div className="flex items-center justify-between pt-4">
-                      <span className="text-white font-black text-xl uppercase">
-                        {bookingData.paymentType === 'full' ? 'Total Due Today' : 'First Payment'}
-                      </span>
+                      <span className="text-white font-black text-xl uppercase">Total</span>
                       <span className="text-yellow-400 font-black text-2xl">
-                        ${bookingData.paymentType === 'full' 
-                          ? getTotalPrice().toLocaleString()
-                          : bookingData.paymentType === 'deposit'
-                          ? (getTotalPrice() * 0.5).toLocaleString()
-                          : Math.ceil(getTotalPrice() / 4).toLocaleString()}
+                        ${getTotalPrice().toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1047,7 +913,7 @@ export default function BookingWizard({ onClose }) {
                 {step === 1 ? 'Cancel' : 'Back'}
               </Button>
 
-              {step < 5 ? (
+              {step < 4 ? (
                 <Button
                   onClick={handleNext}
                   disabled={!canProceed()}
