@@ -82,6 +82,14 @@ export default function Layout({ children, currentPageName }) {
             >
               Admin
             </Link>
+            <Link 
+              to={createPageUrl('TripPaymentSettings')} 
+              className={`text-sm font-bold tracking-wide transition-colors uppercase ${
+                currentPageName === 'TripPaymentSettings' ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
+              }`}
+            >
+              Trip Settings
+            </Link>
           </nav>
 
           {/* Book Now Button */}
