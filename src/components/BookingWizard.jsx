@@ -80,56 +80,36 @@ export default function BookingWizard({ onClose }) {
     return pricePerPerson;
   };
 
-const calculateStripeGross = (amount) => {
-  return Math.round(((amount + 0.30) / (1 - 0.029)) * 100) / 100;
-};
+  const calculateStripeGross = (amount) => {
+    return Math.round(((amount + 0.30) / (1 - 0.029)) * 100) / 100;
+  };
 
-const getBaseAmountDueToday = () => {
-  if (bookingData.paymentOption === 'plan') {
-    const depositPerPerson = 250;
-    return depositPerPerson * bookingData.guests;
-  }
+  const getBaseAmountDueToday = () => {
+    if (bookingData.paymentOption === 'plan') {
+      const depositPerPerson = 250;
+      return depositPerPerson * bookingData.guests;
+    }
+    return getTotalPrice();
+  };
 
-  return getTotalPrice();
-};
+  const getGrossAmountDueToday = () => {
+    const base = getBaseAmountDueToday();
+    return calculateStripeGross(base);
+  };
 
-const calculateStripeGross = (amount) => {
-  return Math.round(((amount + 0.30) / (1 - 0.029)) * 100) / 100;
-};
-
-const getBaseAmountDueToday = () => {
-  if (bookingData.paymentOption === 'plan') {
-    const depositPerPerson = 250;
-    return depositPerPerson * bookingData.guests;
-  }
-
-  return getTotalPrice();
-};
-
-const getGrossAmountDueToday = () => {
-  const base = getBaseAmountDueToday();
-  return calculateStripeGross(base);
-};
-
-const getProcessingFee = () => {
-  return Math.round((getGrossAmountDueToday() - getBaseAmountDueToday()) * 100) / 100;
-};
-
-const getGrossAmountDueToday = () => {
-  const base = getBaseAmountDueToday();
-  return calculateStripeGross(base);
-};
-
-const getProcessingFee = () => {
-  return Math.round((getGrossAmountDueToday() - getBaseAmountDueToday()) * 100) / 100;
-};
+  const getProcessingFee = () => {
+    return Math.round((getGrossAmountDueToday() - getBaseAmountDueToday()) * 100) / 100;
+  };
 
   const getDepositAmount = () => {
     const depositPerPerson = 250;
-    return bookingData.occupancy === 'double'
-    ? depositPerPerson * 2
-    : depositPerPerson;
-};
+    return bookingData.occupancy === 'double' ? depositPerPerson * 2 : depositPerPerson;
+  };
+
+  const handleNext = () => {
+    if (step < 4) setStep(step + 1);
+  };
+
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
