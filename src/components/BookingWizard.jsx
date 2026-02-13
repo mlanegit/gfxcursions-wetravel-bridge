@@ -88,8 +88,7 @@ export default function BookingWizard({ onClose }) {
   };
 
   const handleBookNow = async () => {
-  setIsSubmitting(true);
-  console.log("Stripe button clicked");
+  console.log("🔥 Confirm Booking clicked");
 
   try {
     // 1️⃣ Store booking in Base44 first
@@ -164,6 +163,52 @@ export default function BookingWizard({ onClose }) {
     setIsSubmitting(false);
   }
 };
+
+      const booking = await base44.entities.Booking.create(bookingPayload);
+
+      toast.success('Booking confirmed! We\'ll contact you shortly.');
+      
+      // Close modal and reset form
+      setTimeout(() => {
+        onClose();
+        setBookingData({
+          packageType: '',
+          nights: '',
+          occupancy: '',
+          guests: 1,
+          firstName: '',
+          lastName: '',
+          email: '',
+          countryCode: '+1',
+          phone: '',
+          tshirtSize: '',
+          guest2FirstName: '',
+          guest2LastName: '',
+          guest2Email: '',
+          guest2CountryCode: '+1',
+          guest2Phone: '',
+          guest2TshirtSize: '',
+          bedPreference: '',
+          referredBy: '',
+          celebratingBirthday: '',
+          notes: '',
+          arrivalAirline: '',
+          arrivalDate: '',
+          arrivalTime: '',
+          departureAirline: '',
+          departureDate: '',
+          departureTime: '',
+        });
+        setStep(1);
+        setIsSubmitting(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error('Something went wrong. Please try again or contact support.');
+      setIsSubmitting(false);
+    }
+  };
 
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
