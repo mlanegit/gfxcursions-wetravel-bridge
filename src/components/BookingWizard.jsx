@@ -89,42 +89,45 @@ export default function BookingWizard({ onClose }) {
 
   const handleBookNow = async () => {
   console.log("🔥 Confirm Booking clicked");
+  setIsSubmitting(true);
 
   try {
-    // 1️⃣ Store booking in Base44 first
-    const bookingPayload = {
-      first_name: bookingData.firstName,
-      last_name: bookingData.lastName,
-      email: bookingData.email,
-      phone: `${bookingData.countryCode} ${bookingData.phone}`,
-      tshirt_size: bookingData.tshirtSize,
-      bed_preference: bookingData.bedPreference,
-      referred_by: bookingData.referredBy,
-      celebrating_birthday: bookingData.celebratingBirthday,
-      notes: bookingData.notes,
-      arrival_airline: bookingData.arrivalAirline,
-      arrival_date: bookingData.arrivalDate,
-      arrival_time: bookingData.arrivalTime,
-      departure_airline: bookingData.departureAirline,
-      departure_date: bookingData.departureDate,
-      departure_time: bookingData.departureTime,
-      package: bookingData.packageType,
-      nights: bookingData.nights,
-      occupancy: bookingData.occupancy,
-      guests: bookingData.guests,
-      price_per_person: getPrice(),
-      total_price: getTotalPrice(),
-      payment_status: 'pending',
-      status: 'initiated',
-    };
+    const response = await fetch(
+      "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          firstName: bookingData.firstName,
+          lastName: bookingData.lastName,
+          email: bookingData.email,
+          packageType: bookingData.packageType,
+          nights: bookingData.nights,
+          occupancy: bookingData.occupancy,
+          guests: bookingData.guests,
+          totalPrice: getTotalPrice()
+        })
+      }
+    );
 
-    if (bookingData.occupancy === 'double') {
-      bookingPayload.guest2_first_name = bookingData.guest2FirstName;
-      bookingPayload.guest2_last_name = bookingData.guest2LastName;
-      bookingPayload.guest2_email = bookingData.guest2Email;
-      bookingPayload.guest2_phone = `${bookingData.guest2CountryCode} ${bookingData.guest2Phone}`;
-      bookingPayload.guest2_tshirt_size = bookingData.guest2TshirtSize;
+    const data = await response.json();
+
+    console.log("Stripe response:", data);
+
+    if (!data.url) {
+      throw new Error("Stripe session failed");
     }
+
+    window.location.href = data.url;
+
+  } catch (error) {
+    console.error("Stripe error:", error);
+    toast.error("Something went wrong. Please try again.");
+    setIsSubmitting(false);
+  }
+};
 
     // 2️⃣ Create Stripe Checkout Session
     const response = await fetch(
@@ -163,6 +166,13 @@ export default function BookingWizard({ onClose }) {
     setIsSubmitting(false);
   }
 };
+      
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error('Something went wrong. Please try again or contact support.');
+      setIsSubmitting(false);
+    }
+  };
 
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
