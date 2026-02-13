@@ -87,58 +87,44 @@ export default function BookingWizard({ onClose }) {
     if (step > 1) setStep(step - 1);
   };
 
- const handleBookNow = async () => {
-  console.log("🔥 Confirm Booking clicked");
-  setIsSubmitting(true);
+  const handleBookNow = async () => {
+    console.log("🔥 Confirm Booking clicked");
+    setIsSubmitting(true);
 
-  try {
-    const response = await fetch(
-      "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: bookingData.firstName,
-          lastName: bookingData.lastName,
-          email: bookingData.email,
-          packageType: bookingData.packageType,
-          nights: bookingData.nights,
-          occupancy: bookingData.occupancy,
-          guests: bookingData.guests,
-          totalPrice: getTotalPrice()
-        })
+    try {
+      const response = await fetch(
+        "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: bookingData.firstName,
+            lastName: bookingData.lastName,
+            email: bookingData.email,
+            packageType: bookingData.packageType,
+            nights: bookingData.nights,
+            occupancy: bookingData.occupancy,
+            guests: bookingData.guests,
+            totalPrice: getTotalPrice()
+          })
+        }
+      );
+
+      const data = await response.json();
+      console.log("Stripe response:", data);
+
+      if (!data.url) {
+        throw new Error("Stripe session failed");
       }
-    );
 
-    const data = await response.json();
-    console.log("Stripe response:", data);
+      window.location.href = data.url;
 
-    if (!data.url) {
-      throw new Error("Stripe session failed");
+    } catch (error) {
+      console.error("Stripe error:", error);
+      toast.error("Payment session failed. Please try again.");
+      setIsSubmitting(false);
     }
-
-    window.location.href = data.url;
-
-  } catch (error) {
-    console.error("Stripe error:", error);
-    toast.error("Payment session failed. Please try again.");
-    setIsSubmitting(false);
-  }
-};
-  
-    if (!data.url) {
-      throw new Error("Stripe session failed");
-    }
-    console.log("Stripe session response:", data);
-    // 3️⃣ Redirect to Stripe
-    window.location.href = data.url;
-
-  } catch (error) {
-    console.error("Stripe error:", error);
-    toast.error("Something went wrong. Please try again.");
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
