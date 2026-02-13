@@ -848,128 +848,92 @@ export default function BookingWizard({ onClose }) {
                       </div>
                       <span className="text-white font-bold">${getPrice().toLocaleString()}</span>
                     </div>
-<div className="border-t border-zinc-800 pt-6 mt-6">
-  <h4 className="text-white font-black uppercase text-lg mb-4">
-    Payment Option
-  </h4>
+                  </div>
 
-  <div className="space-y-4">
-    {/* Full Payment */}
-    <div
-      onClick={() => setBookingData({ ...bookingData, paymentOption: 'full' })}
-      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-        bookingData.paymentOption === 'full'
-          ? 'border-green-600 bg-green-600/10'
-          : 'border-zinc-700 hover:border-zinc-600'
-      }`}
-    >
-      <p className="text-white font-bold">Full Payment</p>
-      <p className="text-yellow-400 font-bold mt-1">
-        ${getTotalPrice().toLocaleString()} today
-      </p>
-    </div>
+                  {/* Payment Selection */}
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-white font-black uppercase text-lg">
+                      Choose Payment Option
+                    </h4>
 
-    {/* Payment Plan */}
-    <div
-      onClick={() => setBookingData({ ...bookingData, paymentOption: 'plan' })}
-      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-        bookingData.paymentOption === 'plan'
-          ? 'border-green-600 bg-green-600/10'
-          : 'border-zinc-700 hover:border-zinc-600'
-      }`}
-    >
-      <p className="text-white font-bold">Payment Plan</p>
-      <p className="text-yellow-400 font-bold mt-1">
-        ${bookingData.occupancy === 'double' ? 500 : 250} deposit today
-      </p>
-      <p className="text-gray-400 text-sm">
-        Remaining balance split into 4 monthly payments
-      </p>
-    </div>
-  </div>
-</div>
+                    {/* Full Payment */}
+                    <div
+                      onClick={() =>
+                        setBookingData({ ...bookingData, paymentOption: 'full' })
+                      }
+                      className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
+                        bookingData.paymentOption === 'full'
+                          ? 'border-green-600 bg-green-600/10'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="text-white font-black text-lg">
+                            Pay In Full
+                          </h5>
+                          <p className="text-gray-400 text-sm">
+                            Secure your spot today with full payment.
+                          </p>
+                        </div>
+                        <div className="text-yellow-400 font-black text-xl">
+                          ${getTotalPrice().toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
 
-<div className="flex items-center justify-between pt-4">
-  <span className="text-gray-400">Subtotal</span>
-  <span className="text-white font-bold">
-    ${getBaseAmountDueToday().toLocaleString()}
-  </span>
-</div>
+                    {/* Payment Plan */}
+                    <div
+                      onClick={() =>
+                        setBookingData({ ...bookingData, paymentOption: 'plan' })
+                      }
+                      className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
+                        bookingData.paymentOption === 'plan'
+                          ? 'border-green-600 bg-green-600/10'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h5 className="text-white font-black text-lg">
+                            Payment Plan
+                          </h5>
+                          <p className="text-gray-400 text-sm">
+                            $250 deposit per person today. Remaining balance split into 4 monthly payments ending August 2026.
+                          </p>
+                        </div>
+                        <div className="text-yellow-400 font-black text-xl">
+                          ${getDepositAmount().toLocaleString()} Due Today
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-<div className="flex items-center justify-between">
-  <span className="text-gray-400">Taxes & Fees</span>
-  <span className="text-white font-bold">
-    ${getProcessingFee().toLocaleString()}
-  </span>
-</div>
+                  {/* Price Breakdown */}
+                  <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Subtotal</span>
+                      <span className="text-white font-bold">
+                        ${getBaseAmountDueToday().toLocaleString()}
+                      </span>
+                    </div>
 
-<div className="flex items-center justify-between border-t border-zinc-800 pt-4">
-  <span className="text-white font-black text-xl uppercase">
-    Total Due Today
-  </span>
-  <span className="text-yellow-400 font-black text-2xl">
-    ${getGrossAmountDueToday().toLocaleString()}
-  </span>
-</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Taxes & Fees</span>
+                      <span className="text-white font-bold">
+                        ${getProcessingFee().toLocaleString()}
+                      </span>
+                    </div>
 
-{/* Payment Selection */}
-<div className="mt-6 space-y-4">
-  <h4 className="text-white font-black uppercase text-lg">
-    Choose Payment Option
-  </h4>
-
-  {/* Full Payment */}
-  <div
-    onClick={() =>
-      setBookingData({ ...bookingData, paymentOption: 'full' })
-    }
-    className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
-      bookingData.paymentOption === 'full'
-        ? 'border-green-600 bg-green-600/10'
-        : 'border-zinc-700 hover:border-zinc-600'
-    }`}
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <h5 className="text-white font-black text-lg">
-          Pay In Full
-        </h5>
-        <p className="text-gray-400 text-sm">
-          Secure your spot today with full payment.
-        </p>
-      </div>
-      <div className="text-yellow-400 font-black text-xl">
-        ${getTotalPrice().toLocaleString()}
-      </div>
-    </div>
-  </div>
-
-  {/* Payment Plan */}
-  <div
-    onClick={() =>
-      setBookingData({ ...bookingData, paymentOption: 'plan' })
-    }
-    className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
-      bookingData.paymentOption === 'plan'
-        ? 'border-green-600 bg-green-600/10'
-        : 'border-zinc-700 hover:border-zinc-600'
-    }`}
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <h5 className="text-white font-black text-lg">
-          Payment Plan
-        </h5>
-        <p className="text-gray-400 text-sm">
-          $250 deposit per person today. Remaining balance split into 4 monthly payments ending August 2026.
-        </p>
-      </div>
-      <div className="text-yellow-400 font-black text-xl">
-        ${getDepositAmount().toLocaleString()} Due Today
-      </div>
-    </div>
-  </div>
-</div>
+                    <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
+                      <span className="text-white font-black text-xl uppercase">
+                        Total Due Today
+                      </span>
+                      <span className="text-yellow-400 font-black text-2xl">
+                        ${getGrossAmountDueToday().toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                   <div className="bg-green-600/10 border border-green-600/30 rounded-lg p-4">
                     <p className="text-white text-sm">
                       <span className="font-black">What's Included:</span> Airport shuttle, all-inclusive accommodations, 
