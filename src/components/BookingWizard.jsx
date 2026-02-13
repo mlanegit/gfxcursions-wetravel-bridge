@@ -17,6 +17,7 @@ export default function BookingWizard({ onClose }) {
     nights: '',
     occupancy: '',
     guests: 1,
+    paymentOption: '',
     firstName: '',
     lastName: '',
     email: '',
