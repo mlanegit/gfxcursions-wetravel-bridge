@@ -56,6 +56,7 @@ import GuestPortal from './pages/GuestPortal';
 import Home from './pages/Home';
 import Packages from './pages/Packages';
 import TripPaymentSettings from './pages/TripPaymentSettings';
+import AdminBookings from './pages/AdminBookings';
 import __Layout from './Layout.jsx';
 
 
@@ -69,6 +70,7 @@ export const PAGES = {
     "Home": Home,
     "Packages": Packages,
     "TripPaymentSettings": TripPaymentSettings,
+    "AdminBookings": AdminBookings,
 }
 
 export const pagesConfig = {
