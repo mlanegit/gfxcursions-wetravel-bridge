@@ -106,7 +106,10 @@ export default function BookingWizard({ onClose }) {
             nights: bookingData.nights,
             occupancy: bookingData.occupancy,
             guests: bookingData.guests,
-            totalPrice: getTotalPrice()
+            amountToCharge:
+              bookingData.paymentOption === 'plan'
+                ? (bookingData.occupancy === 'double' ? 500 : 250)
+                : getTotalPrice(),
           })
         }
       );
