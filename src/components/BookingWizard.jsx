@@ -110,7 +110,11 @@ export default function BookingWizard({ onClose }) {
             amountToCharge:
               bookingData.paymentOption === 'plan'
                 ? (bookingData.occupancy === 'double' ? 500 : 250)
+            totalPrice:
+              bookingData.paymentOption === 'plan'
+                ? getDepositAmount()
                 : getTotalPrice(),
+            paymentOption: bookingData.paymentOption,
           })
         }
       );
