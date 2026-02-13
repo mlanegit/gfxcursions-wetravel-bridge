@@ -867,6 +867,64 @@ export default function BookingWizard({ onClose }) {
                     </div>
                   </div>
 
+{/* Payment Selection */}
+<div className="mt-6 space-y-4">
+  <h4 className="text-white font-black uppercase text-lg">
+    Choose Payment Option
+  </h4>
+
+  {/* Full Payment */}
+  <div
+    onClick={() =>
+      setBookingData({ ...bookingData, paymentOption: 'full' })
+    }
+    className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
+      bookingData.paymentOption === 'full'
+        ? 'border-green-600 bg-green-600/10'
+        : 'border-zinc-700 hover:border-zinc-600'
+    }`}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h5 className="text-white font-black text-lg">
+          Pay In Full
+        </h5>
+        <p className="text-gray-400 text-sm">
+          Secure your spot today with full payment.
+        </p>
+      </div>
+      <div className="text-yellow-400 font-black text-xl">
+        ${getTotalPrice().toLocaleString()}
+      </div>
+    </div>
+  </div>
+
+  {/* Payment Plan */}
+  <div
+    onClick={() =>
+      setBookingData({ ...bookingData, paymentOption: 'plan' })
+    }
+    className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
+      bookingData.paymentOption === 'plan'
+        ? 'border-green-600 bg-green-600/10'
+        : 'border-zinc-700 hover:border-zinc-600'
+    }`}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h5 className="text-white font-black text-lg">
+          Payment Plan
+        </h5>
+        <p className="text-gray-400 text-sm">
+          $250 deposit per person today. Remaining balance split into 4 monthly payments ending August 2026.
+        </p>
+      </div>
+      <div className="text-yellow-400 font-black text-xl">
+        ${getDepositAmount().toLocaleString()} Due Today
+      </div>
+    </div>
+  </div>
+</div>
                   <div className="bg-green-600/10 border border-green-600/30 rounded-lg p-4">
                     <p className="text-white text-sm">
                       <span className="font-black">What's Included:</span> Airport shuttle, all-inclusive accommodations, 
