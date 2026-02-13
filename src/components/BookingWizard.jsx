@@ -131,16 +131,33 @@ export default function BookingWizard({ onClose }) {
   };
 
   const canProceed = () => {
-    if (step === 1) return bookingData.packageType && bookingData.nights;
-    if (step === 2) return bookingData.occupancy;
-    if (step === 3) {
-      const guest1Valid = bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
-      if (bookingData.occupancy === 'double') {
-        const guest2Valid = bookingData.guest2FirstName && bookingData.guest2LastName && bookingData.guest2Email && bookingData.guest2Phone;
-        return guest1Valid && guest2Valid;
-      }
-      return guest1Valid;
+   if (step === 1) return bookingData.packageType && bookingData.nights;
+
+   if (step === 2) return bookingData.occupancy;
+
+   if (step === 3) {
+    const guest1Valid =
+      bookingData.firstName &&
+      bookingData.lastName &&
+      bookingData.email &&
+      bookingData.phone;
+
+    if (bookingData.occupancy === 'double') {
+      const guest2Valid =
+        bookingData.guest2FirstName &&
+        bookingData.guest2LastName &&
+        bookingData.guest2Email &&
+        bookingData.guest2Phone;
+      return guest1Valid && guest2Valid;
     }
+
+    return guest1Valid;
+  }
+  
+  // ✅ Step 4 must choose payment option
+  if (step === 4) {
+    return bookingData.paymentOption;
+  }
     return true;
   };
 
