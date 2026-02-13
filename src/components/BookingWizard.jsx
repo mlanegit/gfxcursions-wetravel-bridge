@@ -80,8 +80,8 @@ export default function BookingWizard({ onClose }) {
     return pricePerPerson;
   };
   const getDepositAmount = () => {
-  const depositPerPerson = 250;
-  return bookingData.occupancy === 'double'
+    const depositPerPerson = 250;
+    return bookingData.occupancy === 'double'
     ? depositPerPerson * 2
     : depositPerPerson;
 };
