@@ -127,8 +127,6 @@ export default function BookingWizard({ onClose }) {
       bookingPayload.guest2_tshirt_size = bookingData.guest2TshirtSize;
     }
 
-    const booking = await base44.entities.Booking.create(bookingPayload);
-
     // 2️⃣ Create Stripe Checkout Session
     const response = await fetch(
       "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
