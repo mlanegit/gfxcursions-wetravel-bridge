@@ -133,7 +133,6 @@ const getProcessingFee = () => {
             amountToCharge:
               bookingData.paymentOption === 'plan'
                 ? (bookingData.occupancy === 'double' ? 500 : 250)
-                : getTotalPrice(),
             totalPrice:
               bookingData.paymentOption === 'plan'
                 ? getDepositAmount()
@@ -887,13 +886,28 @@ const getProcessingFee = () => {
   </div>
 </div>
 
-                    <div className="flex items-center justify-between pt-4">
-                      <span className="text-white font-black text-xl uppercase">Total</span>
-                      <span className="text-yellow-400 font-black text-2xl">
-                        ${getTotalPrice().toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
+<div className="flex items-center justify-between pt-4">
+  <span className="text-gray-400">Subtotal</span>
+  <span className="text-white font-bold">
+    ${getBaseAmountDueToday().toLocaleString()}
+  </span>
+</div>
+
+<div className="flex items-center justify-between">
+  <span className="text-gray-400">Taxes & Fees</span>
+  <span className="text-white font-bold">
+    ${getProcessingFee().toLocaleString()}
+  </span>
+</div>
+
+<div className="flex items-center justify-between border-t border-zinc-800 pt-4">
+  <span className="text-white font-black text-xl uppercase">
+    Total Due Today
+  </span>
+  <span className="text-yellow-400 font-black text-2xl">
+    ${getGrossAmountDueToday().toLocaleString()}
+  </span>
+</div>
 
 {/* Payment Selection */}
 <div className="mt-6 space-y-4">
