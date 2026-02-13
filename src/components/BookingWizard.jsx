@@ -183,7 +183,7 @@ export default function BookingWizard({ onClose }) {
     if (step === 2) return bookingData.occupancy;
     if (step === 3) {
       if (!bookingData.paymentType) return false;
-      if (bookingData.paymentType === 'partial' && !bookingData.agreeToSavePayment) return false;
+      if ((bookingData.paymentType === 'deposit' || bookingData.paymentType === 'payment_plan') && !bookingData.agreeToSavePayment) return false;
       return true;
     }
     if (step === 4) {
@@ -458,9 +458,9 @@ export default function BookingWizard({ onClose }) {
                     </div>
 
                     <div
-                      onClick={() => setBookingData({ ...bookingData, paymentType: 'partial' })}
+                      onClick={() => setBookingData({ ...bookingData, paymentType: 'deposit' })}
                       className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentType === 'partial'
+                        bookingData.paymentType === 'deposit'
                           ? 'border-green-600 bg-green-600/10'
                           : 'border-zinc-700 hover:border-zinc-600'
                       }`}
@@ -469,19 +469,53 @@ export default function BookingWizard({ onClose }) {
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <DollarSign className="w-6 h-6 text-green-500" />
-                            <h4 className="text-white font-black text-lg">Partial Payment</h4>
+                            <h4 className="text-white font-black text-lg">Deposit</h4>
                           </div>
-                          <p className="text-gray-400 text-sm">Pay a deposit now, rest later</p>
+                          <p className="text-gray-400 text-sm">Pay 50% now, remainder before arrival</p>
                           <p className="text-yellow-400 font-bold mt-2">
-                            Deposit: ${(getTotalPrice() * 0.5).toLocaleString()}
+                            Today: ${(getTotalPrice() * 0.5).toLocaleString()}
                           </p>
                         </div>
                         <div className={`w-6 h-6 rounded-full border-2 ${
-                          bookingData.paymentType === 'partial'
+                          bookingData.paymentType === 'deposit'
                             ? 'border-green-600 bg-green-600'
                             : 'border-zinc-600'
                         } flex items-center justify-center`}>
-                          {bookingData.paymentType === 'partial' && (
+                          {bookingData.paymentType === 'deposit' && (
+                            <Check className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setBookingData({ ...bookingData, paymentType: 'payment_plan' })}
+                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                        bookingData.paymentType === 'payment_plan'
+                          ? 'border-green-600 bg-green-600/10'
+                          : 'border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <Calendar className="w-6 h-6 text-green-500" />
+                            <h4 className="text-white font-black text-lg">Payment Plan</h4>
+                            <span className="bg-yellow-400 text-black text-xs font-black px-2 py-1 rounded">
+                              FLEXIBLE
+                            </span>
+                          </div>
+                          <p className="text-gray-400 text-sm">Split into monthly installments</p>
+                          <p className="text-yellow-400 font-bold mt-2">
+                            Starting at ${Math.ceil(getTotalPrice() / 4).toLocaleString()}/month
+                          </p>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 ${
+                          bookingData.paymentType === 'payment_plan'
+                            ? 'border-green-600 bg-green-600'
+                            : 'border-zinc-600'
+                        } flex items-center justify-center`}>
+                          {bookingData.paymentType === 'payment_plan' && (
                             <Check className="w-4 h-4 text-white" />
                           )}
                         </div>
@@ -489,7 +523,7 @@ export default function BookingWizard({ onClose }) {
                     </div>
                   </div>
 
-                  {bookingData.paymentType === 'partial' && (
+                  {(bookingData.paymentType === 'deposit' || bookingData.paymentType === 'payment_plan') && (
                     <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
                       <input
                         type="checkbox"
@@ -506,9 +540,15 @@ export default function BookingWizard({ onClose }) {
 
                   <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-4">
                     <p className="text-white text-sm">
-                      <span className="font-black">Note:</span> {bookingData.paymentType === 'partial' 
-                        ? 'You will be charged 50% now, and the remaining balance will be due before your arrival.'
-                        : 'You will be charged the full amount after completing your booking.'}
+                      <span className="font-black">Note:</span> {
+                        bookingData.paymentType === 'full' 
+                          ? 'You will be charged the full amount after completing your booking.'
+                          : bookingData.paymentType === 'deposit'
+                          ? 'You will be charged 50% now, and the remaining balance will be due before your arrival.'
+                          : bookingData.paymentType === 'payment_plan'
+                          ? 'Your total will be split into 4 monthly installments. First payment will be charged today.'
+                          : ''
+                      }
                     </p>
                   </div>
                 </motion.div>
@@ -963,18 +1003,24 @@ export default function BookingWizard({ onClose }) {
                         <span className="text-gray-400">Payment Option</span>
                       </div>
                       <span className="text-white font-bold">
-                        {bookingData.paymentType === 'full' ? 'Full Payment' : 'Partial Payment (50% Deposit)'}
+                        {bookingData.paymentType === 'full' 
+                          ? 'Full Payment' 
+                          : bookingData.paymentType === 'deposit'
+                          ? 'Deposit (50%)'
+                          : 'Payment Plan (4 Installments)'}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between pt-4">
                       <span className="text-white font-black text-xl uppercase">
-                        {bookingData.paymentType === 'partial' ? 'Deposit Due Today' : 'Total'}
+                        {bookingData.paymentType === 'full' ? 'Total Due Today' : 'First Payment'}
                       </span>
                       <span className="text-yellow-400 font-black text-2xl">
-                        ${bookingData.paymentType === 'partial' 
-                          ? (getTotalPrice() * 0.5).toLocaleString() 
-                          : getTotalPrice().toLocaleString()}
+                        ${bookingData.paymentType === 'full' 
+                          ? getTotalPrice().toLocaleString()
+                          : bookingData.paymentType === 'deposit'
+                          ? (getTotalPrice() * 0.5).toLocaleString()
+                          : Math.ceil(getTotalPrice() / 4).toLocaleString()}
                       </span>
                     </div>
                   </div>
