@@ -107,7 +107,12 @@ const getProcessingFee = () => {
     return bookingData.occupancy === 'double'
     ? depositPerPerson * 2
     : depositPerPerson;
-};
+  };
+
+  const handleNext = () => {
+    if (step < 4) setStep(step + 1);
+  };
+
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
