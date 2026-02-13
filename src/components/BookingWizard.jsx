@@ -134,7 +134,8 @@ export default function BookingWizard({ onClose }) {
             guests: bookingData.guests,
             amountToCharge:
               bookingData.paymentOption === 'plan'
-                ? (bookingData.occupancy === 'double' ? 500 : 250)
+                ? calculateStripeGross(bookingData.occupancy === 'double' ? 500 : 250)
+                : getGrossAmountDueToday(),
             totalPrice:
               bookingData.paymentOption === 'plan'
                 ? getDepositAmount()
