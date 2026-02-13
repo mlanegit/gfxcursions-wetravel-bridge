@@ -49,24 +49,26 @@
  */
 import Admin from './pages/Admin';
 import Contact from './pages/Contact';
+import EmailSettings from './pages/EmailSettings';
 import Events from './pages/Events';
 import Gallery from './pages/Gallery';
+import GuestPortal from './pages/GuestPortal';
 import Home from './pages/Home';
 import Packages from './pages/Packages';
-import GuestPortal from './pages/GuestPortal';
-import EmailSettings from './pages/EmailSettings';
+import TripPaymentSettings from './pages/TripPaymentSettings';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Admin": Admin,
     "Contact": Contact,
+    "EmailSettings": EmailSettings,
     "Events": Events,
     "Gallery": Gallery,
+    "GuestPortal": GuestPortal,
     "Home": Home,
     "Packages": Packages,
-    "GuestPortal": GuestPortal,
-    "EmailSettings": EmailSettings,
+    "TripPaymentSettings": TripPaymentSettings,
 }
 
 export const pagesConfig = {
