@@ -40,6 +40,7 @@ export default function BookingWizard({ onClose }) {
     departureAirline: '',
     departureDate: '',
     departureTime: '',
+    agreeToSavePayment: false,
   });
 
   const packages = [
@@ -164,6 +165,7 @@ export default function BookingWizard({ onClose }) {
           departureAirline: '',
           departureDate: '',
           departureTime: '',
+          agreeToSavePayment: false,
         });
         setStep(1);
         setIsSubmitting(false);
@@ -179,7 +181,11 @@ export default function BookingWizard({ onClose }) {
   const canProceed = () => {
     if (step === 1) return bookingData.packageType && bookingData.nights;
     if (step === 2) return bookingData.occupancy;
-    if (step === 3) return bookingData.paymentType;
+    if (step === 3) {
+      if (!bookingData.paymentType) return false;
+      if (bookingData.paymentType === 'partial' && !bookingData.agreeToSavePayment) return false;
+      return true;
+    }
     if (step === 4) {
       const guest1Valid = bookingData.firstName && bookingData.lastName && bookingData.email && bookingData.phone;
       if (bookingData.occupancy === 'double') {
@@ -482,6 +488,21 @@ export default function BookingWizard({ onClose }) {
                       </div>
                     </div>
                   </div>
+
+                  {bookingData.paymentType === 'partial' && (
+                    <div className="flex items-start gap-3 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                      <input
+                        type="checkbox"
+                        id="agreeToSavePayment"
+                        checked={bookingData.agreeToSavePayment}
+                        onChange={(e) => setBookingData({ ...bookingData, agreeToSavePayment: e.target.checked })}
+                        className="mt-1 w-4 h-4 rounded border-zinc-600 text-green-600 focus:ring-green-600 focus:ring-offset-zinc-900"
+                      />
+                      <label htmlFor="agreeToSavePayment" className="text-white text-sm cursor-pointer">
+                        I agree to save my payment method for automatic installment charges.
+                      </label>
+                    </div>
+                  )}
 
                   <div className="bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-4">
                     <p className="text-white text-sm">
