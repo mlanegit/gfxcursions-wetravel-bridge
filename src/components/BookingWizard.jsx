@@ -133,6 +133,7 @@ const getProcessingFee = () => {
             amountToCharge:
               bookingData.paymentOption === 'plan'
                 ? (bookingData.occupancy === 'double' ? 500 : 250)
+                : getGrossAmountDueToday(),
             totalPrice:
               bookingData.paymentOption === 'plan'
                 ? getDepositAmount()
