@@ -185,12 +185,25 @@ export default function BookingWizard({ onClose }) {
     return guest1Valid;
   }
   
-  // ✅ Step 4 must choose payment option
   if (step === 4) {
-    return bookingData.paymentOption;
-  }
+    // Must select payment option first
+    if (!bookingData.paymentOption) return false;
+
+    // 🚫 Block payment plan after Aug 1 2026
+    if (bookingData.paymentOption === "plan") {
+      const today = new Date();
+      const cutoff = new Date("2026-08-01");
+
+      if (today >= cutoff) {
+        return false;
+      }
+    }
+
     return true;
-  };
+  }
+
+  return true;
+};
 
   const getPackageName = () => {
     const pkg = packages.find(p => p.id === bookingData.packageType);
