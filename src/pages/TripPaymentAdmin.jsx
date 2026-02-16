@@ -40,10 +40,13 @@ export default function TripPaymentAdmin() {
   }, []);
 
   const handleAddDate = () => {
-    setSelectedTrip(prev => ({
-      ...prev,
-      plan_dates: [...(prev.plan_dates || []), ''],
-    }));
+    setSelectedTrip(prev => {
+      if (prev.plan_dates?.length >= 10) return prev;
+      return {
+        ...prev,
+        plan_dates: [...(prev.plan_dates || []), ""]
+      };
+    });
   };
 
   const handleRemoveDate = (index) => {
@@ -51,17 +54,6 @@ export default function TripPaymentAdmin() {
       ...prev,
       plan_dates: prev.plan_dates.filter((_, i) => i !== index),
     }));
-  };
-
-  const handleDateChange = (index, value) => {
-    setSelectedTrip(prev => {
-      const newDates = [...(prev.plan_dates || [])];
-      newDates[index] = value;
-      return {
-        ...prev,
-        plan_dates: newDates,
-      };
-    });
   };
 
   const handleSave = async () => {
@@ -209,13 +201,20 @@ export default function TripPaymentAdmin() {
                     Installment Dates (Dynamic List)
                   </Label>
                   <div className="space-y-3">
-                    {(selectedTrip?.plan_dates || []).map((date, index) => (
+                    {selectedTrip?.plan_dates?.map((date, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <span className="text-gray-400 w-6">{index + 1}.</span>
                         <Input
                           type="date"
                           value={date}
-                          onChange={(e) => handleDateChange(index, e.target.value)}
+                          onChange={(e) => {
+                            const updated = [...selectedTrip.plan_dates];
+                            updated[index] = e.target.value;
+                            setSelectedTrip(prev => ({
+                              ...prev,
+                              plan_dates: updated
+                            }));
+                          }}
                           className="bg-black border-zinc-700 text-white flex-1"
                         />
                         <Button
@@ -231,11 +230,19 @@ export default function TripPaymentAdmin() {
 
                     <Button
                       variant="outline"
-                      onClick={handleAddDate}
+                      onClick={() =>
+                        setSelectedTrip(prev => {
+                          if (prev.plan_dates?.length >= 10) return prev;
+                          return {
+                            ...prev,
+                            plan_dates: [...(prev.plan_dates || []), ""]
+                          };
+                        })
+                      }
                       className="border-green-600/30 text-green-500 hover:bg-green-600/10 w-full"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Another Date
+                      + Add Installment Date
                     </Button>
                   </div>
                 </div>
