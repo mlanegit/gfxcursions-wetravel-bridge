@@ -8,6 +8,17 @@ import Settings from '../components/admin/Settings';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { data: user, isLoading } = useQuery({
+  queryKey: ['currentUser'],
+  queryFn: () => base44.auth.me(),
+});
+
+if (isLoading) return null;
+
+if (!user || user.role !== "admin") {
+  window.location.href = "/";
+  return null;
+}
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex">
