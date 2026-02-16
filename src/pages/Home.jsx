@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { Calendar, Users, Music, Waves, Gift, Bus, Palmtree, Star } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import { Calendar, Users, Music, Waves, Gift, Bus, Star } from 'lucide-react';
 import BookingWizard from '../components/BookingWizard';
 
 export default function Home() {
   const [showBookingWizard, setShowBookingWizard] = useState(false);
+  const { data: user } = useQuery({
+  queryKey: ['currentUser'],
+  queryFn: () => base44.auth.me(),
+  }
   const highlights = [
     { icon: Calendar, text: '5 Days / 4 Nights' },
     { icon: Music, text: 'Celebrity DJs & Hosts' },
