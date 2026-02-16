@@ -10,15 +10,11 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 export default function BookingWizard({ onClose, tripSlug }) {
-  export default function BookingWizard({ onClose, tripSlug }) {
-
-  console.log("BookingWizard tripSlug:", tripSlug); // 👈 ADD THIS HERE
+  console.log("BookingWizard tripSlug:", tripSlug);
 
   const [step, setStep] = useState(1);
   const [trip, setTrip] = useState(null);
-const [step, setStep] = useState(1);
-const [isSubmitting, setIsSubmitting] = useState(false);
-const [trip, setTrip] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 const [bookingData, setBookingData] = useState({
     packageType: '',
