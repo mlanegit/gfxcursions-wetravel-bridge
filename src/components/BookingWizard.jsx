@@ -946,37 +946,39 @@ useEffect(() => {
                     </div>
 
                   {/* Payment Plan */}
-                  {isPaymentPlanAvailable() && (
-                    <div
-                      onClick={() =>
-                        setBookingData({ ...bookingData, paymentOption: 'plan' })
-                      }
-                      className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentOption === 'plan'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="text-white font-black text-lg">
-                            Payment Plan
-                          </h5>
-                          <p className="text-gray-400 text-sm">
-                            ${(trip?.deposit_per_person || 250).toLocaleString()} deposit per person today.
-                          </p>
-                        </div>
-                        <div className="text-yellow-400 font-black text-xl">
-                          ${getDepositAmount().toLocaleString()} Due Today
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {trip && !isPaymentPlanAvailable() && (
-                    <div className="text-sm text-red-400 mt-2">
-                      Payment plans are no longer available for this trip.
-                    </div>
-                  )}
+{isPaymentPlanAvailable() && (
+  <div
+    onClick={() =>
+      setBookingData({ ...bookingData, paymentOption: 'plan' })
+    }
+    className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
+      bookingData.paymentOption === 'plan'
+        ? 'border-green-600 bg-green-600/10'
+        : 'border-zinc-700 hover:border-zinc-600'
+    }`}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <h5 className="text-white font-black text-lg">
+          Payment Plan
+        </h5>
+        <p className="text-gray-400 text-sm">
+          ${(trip?.deposit_per_person || 250).toLocaleString()} deposit per person today. 
+          Remaining balance split into fixed monthly payments.
+        </p>
+      </div>
+      <div className="text-yellow-400 font-black text-xl">
+        ${getDepositAmount().toLocaleString()} Due Today
+      </div>
+    </div>
+  </div>
+)}
+
+{trip && !isPaymentPlanAvailable() && (
+  <div className="text-sm text-red-400 mt-2">
+    Payment plans are no longer available for this trip.
+  </div>
+)}
 
                   {/* Price Breakdown */}
                   <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
