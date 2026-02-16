@@ -972,15 +972,11 @@ useEffect(() => {
                       </div>
                     </div>
                   )}
-                  {trip &&
-                  trip.payment_plan_enabled &&
-                  new Date() >= new Date(trip.plan_cutoff_date) && (
+                  {trip && !isPaymentPlanAvailable() && (
                     <div className="text-sm text-red-400 mt-2">
-                      Payment plans closed on{" "}
-                      {new Date(trip.plan_cutoff_date).toLocaleDateString()}.
+                      Payment plans are no longer available for this trip.
                     </div>
-                  )}
-
+                   )}
                   {/* Price Breakdown */}
                   <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
                     <div className="flex items-center justify-between">
