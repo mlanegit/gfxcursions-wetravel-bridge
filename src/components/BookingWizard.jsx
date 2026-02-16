@@ -958,6 +958,7 @@ useEffect(() => {
                       </div>
                     </div>
                   )}
+                  </div>
 
                   {/* Price Breakdown */}
                   <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
