@@ -48,6 +48,7 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import Admin from './pages/Admin';
+import AdminBookings from './pages/AdminBookings';
 import AdminDashboard from './pages/AdminDashboard';
 import Contact from './pages/Contact';
 import EmailSettings from './pages/EmailSettings';
@@ -58,12 +59,12 @@ import Home from './pages/Home';
 import Packages from './pages/Packages';
 import TripPaymentAdmin from './pages/TripPaymentAdmin';
 import TripPaymentSettings from './pages/TripPaymentSettings';
-import AdminBookings from './pages/AdminBookings';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Admin": Admin,
+    "AdminBookings": AdminBookings,
     "AdminDashboard": AdminDashboard,
     "Contact": Contact,
     "EmailSettings": EmailSettings,
@@ -74,7 +75,6 @@ export const PAGES = {
     "Packages": Packages,
     "TripPaymentAdmin": TripPaymentAdmin,
     "TripPaymentSettings": TripPaymentSettings,
-    "AdminBookings": AdminBookings,
 }
 
 export const pagesConfig = {
