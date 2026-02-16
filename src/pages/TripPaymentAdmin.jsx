@@ -16,13 +16,6 @@ export default function TripPaymentAdmin() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [settings, setSettings] = useState({
-    deposit_per_person: 250,
-    payment_plan_enabled: true,
-    plan_cutoff_date: '',
-    plan_dates: [],
-  });
-
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -46,38 +39,28 @@ export default function TripPaymentAdmin() {
     loadUser();
   }, []);
 
-  useEffect(() => {
-    if (selectedTrip) {
-      setSettings({
-        deposit_per_person: selectedTrip.deposit_per_person || 250,
-        payment_plan_enabled: selectedTrip.payment_plan_enabled ?? true,
-        plan_cutoff_date: selectedTrip.plan_cutoff_date || '',
-        plan_dates: selectedTrip.plan_dates || [],
-      });
-    }
-  }, [selectedTrip]);
-
   const handleAddDate = () => {
-    setSettings({
-      ...settings,
-      plan_dates: [...settings.plan_dates, ''],
-    });
+    setSelectedTrip(prev => ({
+      ...prev,
+      plan_dates: [...(prev.plan_dates || []), ''],
+    }));
   };
 
   const handleRemoveDate = (index) => {
-    const newDates = settings.plan_dates.filter((_, i) => i !== index);
-    setSettings({
-      ...settings,
-      plan_dates: newDates,
-    });
+    setSelectedTrip(prev => ({
+      ...prev,
+      plan_dates: prev.plan_dates.filter((_, i) => i !== index),
+    }));
   };
 
   const handleDateChange = (index, value) => {
-    const newDates = [...settings.plan_dates];
-    newDates[index] = value;
-    setSettings({
-      ...settings,
-      plan_dates: newDates,
+    setSelectedTrip(prev => {
+      const newDates = [...(prev.plan_dates || [])];
+      newDates[index] = value;
+      return {
+        ...prev,
+        plan_dates: newDates,
+      };
     });
   };
 
@@ -91,10 +74,10 @@ export default function TripPaymentAdmin() {
 
     try {
       await base44.entities.Trip.update(selectedTrip.id, {
-        deposit_per_person: parseFloat(settings.deposit_per_person) || 250,
-        payment_plan_enabled: settings.payment_plan_enabled,
-        plan_cutoff_date: settings.plan_cutoff_date || null,
-        plan_dates: settings.plan_dates.filter(date => date !== ''),
+        deposit_per_person: parseFloat(selectedTrip.deposit_per_person) || 250,
+        payment_plan_enabled: selectedTrip.payment_plan_enabled ?? true,
+        plan_cutoff_date: selectedTrip.plan_cutoff_date || null,
+        plan_dates: (selectedTrip.plan_dates || []).filter(date => date !== ''),
       });
 
       toast.success('Trip payment settings saved successfully');
@@ -171,12 +154,12 @@ export default function TripPaymentAdmin() {
                     <span className="text-gray-400">$</span>
                     <Input
                       type="number"
-                      value={settings.deposit_per_person}
+                      value={selectedTrip?.deposit_per_person || ''}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          deposit_per_person: e.target.value,
-                        })
+                        setSelectedTrip(prev => ({
+                          ...prev,
+                          deposit_per_person: Number(e.target.value),
+                        }))
                       }
                       className="bg-black border-zinc-700 text-white"
                       placeholder="250"
@@ -191,12 +174,12 @@ export default function TripPaymentAdmin() {
                       Enable Payment Plan
                     </Label>
                     <Switch
-                      checked={settings.payment_plan_enabled}
+                      checked={selectedTrip?.payment_plan_enabled ?? true}
                       onCheckedChange={(checked) =>
-                        setSettings({
-                          ...settings,
+                        setSelectedTrip(prev => ({
+                          ...prev,
                           payment_plan_enabled: checked,
-                        })
+                        }))
                       }
                     />
                   </div>
@@ -209,12 +192,12 @@ export default function TripPaymentAdmin() {
                   </Label>
                   <Input
                     type="date"
-                    value={settings.plan_cutoff_date}
+                    value={selectedTrip?.plan_cutoff_date || ''}
                     onChange={(e) =>
-                      setSettings({
-                        ...settings,
+                      setSelectedTrip(prev => ({
+                        ...prev,
                         plan_cutoff_date: e.target.value,
-                      })
+                      }))
                     }
                     className="bg-black border-zinc-700 text-white"
                   />
@@ -226,7 +209,7 @@ export default function TripPaymentAdmin() {
                     Installment Dates (Dynamic List)
                   </Label>
                   <div className="space-y-3">
-                    {settings.plan_dates.map((date, index) => (
+                    {(selectedTrip?.plan_dates || []).map((date, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <span className="text-gray-400 w-6">{index + 1}.</span>
                         <Input
