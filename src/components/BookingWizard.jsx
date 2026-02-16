@@ -920,7 +920,8 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    {/* Payment Plan */}
+                  {/* Payment Plan */}
+                  {isPaymentPlanAvailable() && (
                     <div
                       onClick={() =>
                         setBookingData({ ...bookingData, paymentOption: 'plan' })
@@ -937,7 +938,7 @@ useEffect(() => {
                             Payment Plan
                           </h5>
                           <p className="text-gray-400 text-sm">
-                            $250 deposit per person today. Remaining balance split into 4 monthly payments ending August 2026.
+                            $250 deposit per person today. Remaining balance split into fixed monthly payments.
                           </p>
                         </div>
                         <div className="text-yellow-400 font-black text-xl">
@@ -945,7 +946,7 @@ useEffect(() => {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Price Breakdown */}
                   <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
