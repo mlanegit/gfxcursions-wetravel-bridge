@@ -230,17 +230,6 @@ useEffect(() => {
   return true;
 };
 
-  const isPaymentPlanAvailable = () => {
-    if (!trip) return false;
-    if (!trip.payment_plan_enabled) return false;
-    if (trip.plan_cutoff_date) {
-      const today = new Date();
-      const cutoff = new Date(trip.plan_cutoff_date);
-      if (today >= cutoff) return false;
-    }
-    return true;
-  };
-
   const getPackageName = () => {
     const pkg = packages.find(p => p.id === bookingData.packageType);
     return pkg ? pkg.name : '';
@@ -958,7 +947,14 @@ useEffect(() => {
                       </div>
                     </div>
                   )}
+                  {trip &&
+                  trip.payment_plan_enabled &&
+                  new Date() >= new Date(trip.plan_cutoff_date) && (
+                  <div className="text-sm text-red-400 mt-2">
+                  Payment plans closed on{" "}
+                  {new Date(trip.plan_cutoff_date).toLocaleDateString()}.
                   </div>
+                  )}
 
                   {/* Price Breakdown */}
                   <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
