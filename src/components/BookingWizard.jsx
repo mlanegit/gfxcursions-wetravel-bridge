@@ -260,7 +260,13 @@ useEffect(() => {
     const pkg = packages.find(p => p.id === bookingData.packageType);
     return pkg ? pkg.name : '';
   };
-
+// 🔍 TEMP DEBUG
+if (step === 4) {
+  console.log("Trip:", trip);
+  console.log("payment_plan_enabled:", trip?.payment_plan_enabled);
+  console.log("plan_cutoff_date:", trip?.plan_cutoff_date);
+  console.log("today:", new Date());
+}
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
