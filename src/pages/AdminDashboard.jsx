@@ -1,4 +1,10 @@
 import React, { useState } from 'react';
+import AdminOverview from '../components/admin/AdminOverview';
+import TripManager from '../components/admin/TripManager';
+import BookingManager from '../components/admin/BookingManager';
+import PaymentManager from '../components/admin/PaymentManager';
+import Reports from '../components/admin/Reports';
+import Settings from '../components/admin/Settings';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -47,28 +53,4 @@ export default function AdminDashboard() {
 
     </div>
   );
-}
-
-function AdminOverview() {
-  return <div>Dashboard Content</div>;
-}
-
-function TripManager() {
-  return <div>Trip Manager Content</div>;
-}
-
-function BookingManager() {
-  return <div>Booking Manager Content</div>;
-}
-
-function PaymentManager() {
-  return <div>Payment Manager Content</div>;
-}
-
-function Reports() {
-  return <div>Reports Content</div>;
-}
-
-function Settings() {
-  return <div>Settings Content</div>;
 }
