@@ -87,12 +87,11 @@ const [bookingData, setBookingData] = useState({
   };
 
   const getBaseAmountDueToday = () => {
-    if (bookingData.paymentOption === 'plan') {
-      const depositPerPerson = 250;
-      return depositPerPerson * bookingData.guests;
-    }
-    return getTotalPrice();
-  };
+  if (bookingData.paymentOption === 'plan') {
+    return getDepositAmount();
+  }
+  return getTotalPrice();
+};
 
   const getGrossAmountDueToday = () => {
     const base = getBaseAmountDueToday();
