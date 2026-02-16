@@ -104,9 +104,12 @@ const [bookingData, setBookingData] = useState({
   };
 
   const getDepositAmount = () => {
-    const depositPerPerson = 250;
-    return bookingData.occupancy === 'double' ? depositPerPerson * 2 : depositPerPerson;
-  };
+  if (!trip) return 0;
+
+  const depositPerPerson = trip.deposit_per_person || 250;
+
+  return depositPerPerson * bookingData.guests;
+};
 useEffect(() => {
   const loadTrip = async () => {
     try {
