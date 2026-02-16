@@ -13,6 +13,7 @@ export default function BookingWizard({ onClose }) {
 const [step, setStep] = useState(1);
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [trip, setTrip] = useState(null);
+
 const [bookingData, setBookingData] = useState({
     packageType: '',
     nights: '',
@@ -106,6 +107,23 @@ const [bookingData, setBookingData] = useState({
     const depositPerPerson = 250;
     return bookingData.occupancy === 'double' ? depositPerPerson * 2 : depositPerPerson;
   };
+useEffect(() => {
+  const loadTrip = async () => {
+    try {
+      const trips = await base44.entities.Trip.list({
+        filter: { slug: "lost-in-jamaica" } // 🔥 Change slug per trip
+      });
+
+      if (trips.length > 0) {
+        setTrip(trips[0]);
+      }
+    } catch (err) {
+      console.error("Failed to load trip", err);
+    }
+  };
+
+  loadTrip();
+}, []);
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -190,15 +208,21 @@ const [bookingData, setBookingData] = useState({
     // Must select payment option first
     if (!bookingData.paymentOption) return false;
 
-    // 🚫 Block payment plan after Aug 1 2026
+    // 🚫 Block payment plan Dynamic Setting
     if (bookingData.paymentOption === "plan") {
-      const today = new Date();
-      const cutoff = new Date("2026-08-01");
+  if (!trip) return false;
 
-      if (today >= cutoff) {
-        return false;
-      }
+  if (!trip.payment_plan_enabled) return false;
+
+  if (trip.plan_cutoff_date) {
+    const today = new Date();
+    const cutoff = new Date(trip.plan_cutoff_date);
+
+    if (today >= cutoff) {
+      return false;
     }
+  }
+}
 
     return true;
   }
