@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 export default function TripPaymentAdmin() {
   const [user, setUser] = useState(null);
   const [trips, setTrips] = useState([]);
-  const [selectedTripId, setSelectedTripId] = useState('');
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -48,20 +47,15 @@ export default function TripPaymentAdmin() {
   }, []);
 
   useEffect(() => {
-    if (selectedTripId) {
-      const trip = trips.find(t => t.id === selectedTripId);
-      setSelectedTrip(trip);
-
-      if (trip) {
-        setSettings({
-          deposit_per_person: trip.deposit_per_person || 250,
-          payment_plan_enabled: trip.payment_plan_enabled ?? true,
-          plan_cutoff_date: trip.plan_cutoff_date || '',
-          plan_dates: trip.plan_dates || [],
-        });
-      }
+    if (selectedTrip) {
+      setSettings({
+        deposit_per_person: selectedTrip.deposit_per_person || 250,
+        payment_plan_enabled: selectedTrip.payment_plan_enabled ?? true,
+        plan_cutoff_date: selectedTrip.plan_cutoff_date || '',
+        plan_dates: selectedTrip.plan_dates || [],
+      });
     }
-  }, [selectedTripId, trips]);
+  }, [selectedTrip]);
 
   const handleAddDate = () => {
     setSettings({
@@ -88,7 +82,7 @@ export default function TripPaymentAdmin() {
   };
 
   const handleSave = async () => {
-    if (!selectedTripId) {
+    if (!selectedTrip) {
       toast.error('Please select a trip');
       return;
     }
@@ -96,7 +90,7 @@ export default function TripPaymentAdmin() {
     setIsSaving(true);
 
     try {
-      await base44.entities.Trip.update(selectedTripId, {
+      await base44.entities.Trip.update(selectedTrip.id, {
         deposit_per_person: parseFloat(settings.deposit_per_person) || 250,
         payment_plan_enabled: settings.payment_plan_enabled,
         plan_cutoff_date: settings.plan_cutoff_date || null,
@@ -146,7 +140,13 @@ export default function TripPaymentAdmin() {
               <Label className="text-white font-bold mb-2 block uppercase text-sm">
                 Trip Selector
               </Label>
-              <Select value={selectedTripId} onValueChange={setSelectedTripId}>
+              <Select
+                value={selectedTrip?.id}
+                onValueChange={(id) => {
+                  const trip = trips.find(t => t.id === id);
+                  setSelectedTrip(trip);
+                }}
+              >
                 <SelectTrigger className="bg-black border-zinc-700 text-white">
                   <SelectValue placeholder="Select a trip" />
                 </SelectTrigger>
@@ -160,7 +160,7 @@ export default function TripPaymentAdmin() {
               </Select>
             </div>
 
-            {selectedTripId && (
+            {selectedTrip && (
               <>
                 {/* Deposit Per Person */}
                 <div className="border-b border-zinc-800 pb-6">
