@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
-export default function BookingWizard({ onClose }) {
+export default function BookingWizard({ onClose, tripSlug }) {
 const [step, setStep] = useState(1);
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [trip, setTrip] = useState(null);
@@ -113,7 +113,7 @@ useEffect(() => {
   const loadTrip = async () => {
     try {
       const trips = await base44.entities.Trip.list({
-        filter: { slug: "lost-in-jamaica" } // 🔥 Change slug per trip
+        filter: { slug: tripSlug }
       });
 
       if (trips.length > 0) {
@@ -124,8 +124,10 @@ useEffect(() => {
     }
   };
 
-  loadTrip();
-}, []);
+  if (tripSlug) {
+    loadTrip();
+  }
+}, [tripSlug]);
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
