@@ -192,11 +192,11 @@ export default function TripPaymentAdmin() {
                   </Label>
                   <Input
                     type="date"
-                    value={selectedTrip?.plan_cutoff_date || ''}
+                    value={selectedTrip?.plan_cutoff_date || ""}
                     onChange={(e) =>
                       setSelectedTrip(prev => ({
                         ...prev,
-                        plan_cutoff_date: e.target.value,
+                        plan_cutoff_date: e.target.value
                       }))
                     }
                     className="bg-black border-zinc-700 text-white"
