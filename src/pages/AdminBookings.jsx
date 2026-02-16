@@ -10,44 +10,70 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminLayout from '@/components/admin/AdminLayout';
 
-export default function AdminBookings() {
+// ✅ REAL PAGE CONTENT
+function AdminBookings() {
+  const [user, setUser] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTrip, setFilterTrip] = useState('all');
   const [filterPaymentOption, setFilterPaymentOption] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
+
   const [cancelReason, setCancelReason] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [refundMethod, setRefundMethod] = useState('credit_card');
 
   const queryClient = useQueryClient();
 
-  // Fetch bookings
+  // ✅ Check admin access
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        if (currentUser?.role !== 'admin') {
+          window.location.href = '/';
+          return;
+        }
+        setUser(currentUser);
+      } catch (error) {
+        window.location.href = '/';
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  // ✅ Fetch bookings
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ['admin-bookings'],
     queryFn: () => base44.entities.Booking.list('-created_date'),
     enabled: !!user,
   });
 
-  // Fetch trips
+  // ✅ Fetch trips
   const { data: trips = [] } = useQuery({
     queryKey: ['trips'],
     queryFn: () => base44.entities.Trip.list(),
     enabled: !!user,
   });
 
-  // Fetch packages
+  // ✅ Fetch packages
   const { data: packages = [] } = useQuery({
     queryKey: ['packages'],
     queryFn: () => base44.entities.TripPackage.list(),
     enabled: !!user,
   });
 
-  // Cancel booking mutation
+  // ✅ Cancel booking mutation
   const cancelBookingMutation = useMutation({
     mutationFn: async ({ bookingId }) => {
       return base44.entities.Booking.update(bookingId, {
@@ -56,7 +82,7 @@ export default function AdminBookings() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-bookings']);
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       toast.success('Booking canceled successfully');
       setShowCancelDialog(false);
       setCancelReason('');
@@ -68,7 +94,7 @@ export default function AdminBookings() {
     },
   });
 
-  // Refund mutation
+  // ✅ Refund mutation
   const refundMutation = useMutation({
     mutationFn: async ({ bookingId, amountCents, method }) => {
       return base44.entities.Booking.update(bookingId, {
@@ -79,7 +105,7 @@ export default function AdminBookings() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-bookings']);
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       toast.success('Refund processed successfully');
       setShowRefundDialog(false);
       setRefundAmount('');
@@ -92,20 +118,20 @@ export default function AdminBookings() {
     },
   });
 
-  // Helper functions
+  // Helpers
   const getTripName = (tripId) => {
-    const trip = trips.find(t => t.id === tripId);
+    const trip = trips.find((t) => t.id === tripId);
     return trip?.name || 'Unknown Trip';
   };
 
   const getPackageName = (packageId) => {
-    const pkg = packages.find(p => p.id === packageId);
-    return pkg?.label || 'Unknown Package';
+    const pkg = packages.find((p) => p.id === packageId);
+    return pkg?.label || pkg?.name || 'Unknown Package';
   };
 
   const formatCurrency = (cents) => {
-    if (!cents && cents !== 0) return '$0.00';
-    return `$${(cents / 100).toFixed(2)}`;
+    if (cents === null || cents === undefined) return '$0.00';
+    return `$${(Number(cents) / 100).toFixed(2)}`;
   };
 
   const getStatusBadge = (status) => {
@@ -119,21 +145,22 @@ export default function AdminBookings() {
     };
     return (
       <Badge className={colors[status] || 'bg-gray-100 text-gray-800'}>
-        {status?.replace('_', ' ').toUpperCase()}
+        {(status || 'unknown').replace('_', ' ').toUpperCase()}
       </Badge>
     );
   };
 
   // Filter bookings
   const filteredBookings = bookings.filter((booking) => {
-    const matchesSearch = 
+    const matchesSearch =
       searchTerm === '' ||
       booking.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesTrip = filterTrip === 'all' || booking.trip_id === filterTrip;
-    const matchesPayment = filterPaymentOption === 'all' || booking.payment_option === filterPaymentOption;
+    const matchesPayment =
+      filterPaymentOption === 'all' || booking.payment_option === filterPaymentOption;
     const matchesStatus = filterStatus === 'all' || booking.status === filterStatus;
 
     return matchesSearch && matchesTrip && matchesPayment && matchesStatus;
@@ -145,8 +172,16 @@ export default function AdminBookings() {
       return;
     }
     toast.info('This would cancel the Stripe subscription schedule. Integration needed.');
-    // TODO: Implement Stripe API call to cancel subscription schedule
+    // TODO: call your backend Stripe endpoint to cancel schedule
   };
+
+  if (loading || bookingsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
@@ -263,7 +298,10 @@ export default function AdminBookings() {
                         <TableCell>{getStatusBadge(booking.status)}</TableCell>
                         <TableCell className="text-xs text-gray-500">
                           {booking.stripe_subscription_schedule_id ? (
-                            <span className="truncate block max-w-[120px]" title={booking.stripe_subscription_schedule_id}>
+                            <span
+                              className="truncate block max-w-[120px]"
+                              title={booking.stripe_subscription_schedule_id}
+                            >
                               {booking.stripe_subscription_schedule_id.substring(0, 15)}...
                             </span>
                           ) : (
@@ -282,6 +320,7 @@ export default function AdminBookings() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+
                             {booking.status !== 'canceled' && (
                               <>
                                 <Button
@@ -294,12 +333,15 @@ export default function AdminBookings() {
                                 >
                                   <X className="w-4 h-4" />
                                 </Button>
+
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => {
                                     setSelectedBooking(booking);
-                                    setRefundAmount((booking.total_price_cents / 100).toFixed(2));
+                                    setRefundAmount(
+                                      ((booking.total_price_cents || 0) / 100).toFixed(2)
+                                    );
                                     setShowRefundDialog(true);
                                   }}
                                 >
@@ -307,6 +349,7 @@ export default function AdminBookings() {
                                 </Button>
                               </>
                             )}
+
                             {booking.stripe_subscription_schedule_id && (
                               <Button
                                 size="sm"
@@ -334,12 +377,15 @@ export default function AdminBookings() {
           <DialogHeader>
             <DialogTitle>Booking Details</DialogTitle>
           </DialogHeader>
+
           {selectedBooking && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-500">Guest Name</p>
-                  <p className="font-medium">{selectedBooking.first_name} {selectedBooking.last_name}</p>
+                  <p className="font-medium">
+                    {selectedBooking.first_name} {selectedBooking.last_name}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
@@ -367,7 +413,9 @@ export default function AdminBookings() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Payment Option</p>
-                  <p className="font-medium">{selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan'}</p>
+                  <p className="font-medium">
+                    {selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Price</p>
@@ -377,12 +425,16 @@ export default function AdminBookings() {
                   <p className="text-sm text-gray-500">Amount Paid</p>
                   <p className="font-medium">{formatCurrency(selectedBooking.amount_paid_cents)}</p>
                 </div>
+
                 {selectedBooking.stripe_subscription_schedule_id && (
                   <div className="col-span-2">
                     <p className="text-sm text-gray-500">Subscription Schedule ID</p>
-                    <p className="font-mono text-xs">{selectedBooking.stripe_subscription_schedule_id}</p>
+                    <p className="font-mono text-xs">
+                      {selectedBooking.stripe_subscription_schedule_id}
+                    </p>
                   </div>
                 )}
+
                 {selectedBooking.notes && (
                   <div className="col-span-2">
                     <p className="text-sm text-gray-500">Notes</p>
@@ -404,6 +456,7 @@ export default function AdminBookings() {
               Are you sure you want to cancel this booking? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Cancellation Reason (Optional)</label>
@@ -415,6 +468,7 @@ export default function AdminBookings() {
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
               Keep Booking
@@ -446,6 +500,7 @@ export default function AdminBookings() {
               Enter refund details below. This will mark the booking as canceled.
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Refund Amount ($)</label>
@@ -458,6 +513,7 @@ export default function AdminBookings() {
                 className="mt-2"
               />
             </div>
+
             <div>
               <label className="text-sm font-medium">Refund Method</label>
               <Select value={refundMethod} onValueChange={setRefundMethod}>
@@ -474,6 +530,7 @@ export default function AdminBookings() {
               </Select>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRefundDialog(false)}>
               Cancel
@@ -502,5 +559,14 @@ export default function AdminBookings() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ✅ WRAPPER EXPORT (what the router imports)
+export default function AdminBookingsWrapper() {
+  return (
+    <AdminLayout>
+      <AdminBookings />
+    </AdminLayout>
   );
 }
