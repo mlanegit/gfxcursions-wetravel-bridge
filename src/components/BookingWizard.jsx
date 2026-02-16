@@ -136,6 +136,11 @@ useEffect(() => {
   };
 
   const handleBookNow = async () => {
+  if (!trip) {
+  toast.error("Trip data not loaded yet. Please try again.");
+  setIsSubmitting(false);
+  return;
+}
   console.log("🔥 Confirm Booking clicked");
   setIsSubmitting(true);
 
