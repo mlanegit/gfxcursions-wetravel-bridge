@@ -963,7 +963,7 @@ useEffect(() => {
                             Payment Plan
                           </h5>
                           <p className="text-gray-400 text-sm">
-                            $250 deposit per person today. Remaining balance split into fixed monthly payments.
+                            ${(trip?.deposit_per_person || 250).toLocaleString()} deposit per person today.
                           </p>
                         </div>
                         <div className="text-yellow-400 font-black text-xl">
