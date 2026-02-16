@@ -998,6 +998,7 @@ useEffect(() => {
                       entry to all weekend events, resort amenities, and more!
                     </p>
                   </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
