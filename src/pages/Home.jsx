@@ -11,9 +11,10 @@ import BookingWizard from '../components/BookingWizard';
 export default function Home() {
   const [showBookingWizard, setShowBookingWizard] = useState(false);
   const { data: user } = useQuery({
-  queryKey: ['currentUser'],
-  queryFn: () => base44.auth.me(),
-  }
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+  
   const highlights = [
     { icon: Calendar, text: '5 Days / 4 Nights' },
     { icon: Music, text: 'Celebrity DJs & Hosts' },
