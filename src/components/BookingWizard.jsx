@@ -976,7 +976,8 @@ useEffect(() => {
                     <div className="text-sm text-red-400 mt-2">
                       Payment plans are no longer available for this trip.
                     </div>
-                   )}
+                  )}
+
                   {/* Price Breakdown */}
                   <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
                     <div className="flex items-center justify-between">
