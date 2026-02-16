@@ -12,13 +12,38 @@ import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from "@/components/admin/AdminLayout";
 
-export default function AdminBookingsWrapper() {
-  return (
-    <AdminLayout>
-      <AdminBookings />
-    </AdminLayout>
-  );
-}
+function AdminBookings() {
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
+import AdminLayout from "@/components/admin/AdminLayout";
+
+function AdminBookings() {
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTrip, setFilterTrip] = useState('all');
+  const [filterPaymentOption, setFilterPaymentOption] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showRefundDialog, setShowRefundDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundMethod, setRefundMethod] = useState('credit_card');
+
+  const queryClient = useQueryClient();
+
+  // 👇 ALL your existing useQuery, useMutation, helper functions, etc stay here
   // Fetch bookings
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ['admin-bookings'],
@@ -495,5 +520,15 @@ export default function AdminBookingsWrapper() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+}
+
+export default function AdminBookingsWrapper() {
+  return (
+    <AdminLayout>
+      <AdminBookings />
+    </AdminLayout>
   );
 }
