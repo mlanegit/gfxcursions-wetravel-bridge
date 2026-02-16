@@ -174,11 +174,11 @@ export default function TripPaymentAdmin() {
                       Enable Payment Plan
                     </Label>
                     <Switch
-                      checked={selectedTrip?.payment_plan_enabled ?? true}
-                      onCheckedChange={(checked) =>
+                      checked={selectedTrip?.payment_plan_enabled}
+                      onCheckedChange={(value) =>
                         setSelectedTrip(prev => ({
                           ...prev,
-                          payment_plan_enabled: checked,
+                          payment_plan_enabled: value,
                         }))
                       }
                     />
