@@ -57,18 +57,18 @@ export default function Home() {
       </section>
 
       {/* Hero Section */}
-      <div className="relative z-10 text-center px-6 py-32">
-  
-  {user?.role === "admin" && (
-    <div className="absolute top-6 right-6">
-      <Button
-        onClick={() => window.location.href = createPageUrl('AdminDashboard')}
-        className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase"
-      >
-        Admin
-      </Button>
-    </div>
-  )}
+      <section className="relative">
+        {user?.role === "admin" && (
+          <div className="absolute top-6 right-6 z-20">
+            <Button
+              onClick={() => window.location.href = createPageUrl('AdminDashboard')}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase"
+            >
+              Admin
+            </Button>
+          </div>
+        )}
+        
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
           <img 
