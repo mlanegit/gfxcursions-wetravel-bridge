@@ -5,11 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, AlertTriangle } from 'lucide-react';
 
 export default function PaymentManager() {
+  const [selectedTrip, setSelectedTrip] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterPaymentType, setFilterPaymentType] = useState('all');
 
   // Fetch bookings
   const { data: bookings = [] } = useQuery({
@@ -17,49 +16,83 @@ export default function PaymentManager() {
     queryFn: () => base44.entities.Booking.list('-created_date'),
   });
 
-  // ---- Calculations ----
-  const totalRevenue = bookings.reduce(
+  // Fetch trips
+  const { data: trips = [] } = useQuery({
+    queryKey: ['payments-trips'],
+    queryFn: () => base44.entities.Trip.list(),
+  });
+
+  // ---- Trip Filter ----
+  const tripFiltered = bookings.filter((b) =>
+    selectedTrip === 'all' ? true : b.trip_id === selectedTrip
+  );
+
+  const filtered = tripFiltered.filter((b) =>
+    filterStatus === 'all' ? true : b.status === filterStatus
+  );
+
+  // ---- Calculations (PER TRIP) ----
+  const totalRevenue = tripFiltered.reduce(
     (sum, b) => sum + (Number(b.amount_paid_cents) || 0),
     0
   );
 
-  const totalOutstanding = bookings.reduce((sum, b) => {
+  const totalOutstanding = tripFiltered.reduce((sum, b) => {
     const total = Number(b.total_price_cents) || 0;
     const paid = Number(b.amount_paid_cents) || 0;
     return sum + (total - paid);
   }, 0);
 
-  const activePlans = bookings.filter(
-    (b) => b.payment_option === 'plan' && b.status === 'active_plan'
-  ).length;
-
-  const failedPayments = bookings.filter(
-    (b) => b.status === 'failed' || b.status === 'past_due'
-  ).length;
-
-  // ---- Filters ----
-  const filtered = bookings.filter((b) => {
-    const statusMatch =
-      filterStatus === 'all' || b.status === filterStatus;
-
-    const paymentMatch =
-      filterPaymentType === 'all' ||
-      b.payment_option === filterPaymentType;
-
-    return statusMatch && paymentMatch;
-  });
+  const totalBookings = tripFiltered.length;
 
   const formatCurrency = (cents) =>
     `$${(Number(cents) / 100).toFixed(2)}`;
 
+  const getTripName = (tripId) => {
+    const trip = trips.find((t) => t.id === tripId);
+    return trip?.name || 'Unknown Trip';
+  };
+
   return (
     <div className="space-y-8">
 
-      {/* Header */}
       <h1 className="text-3xl font-black uppercase">Payment Manager</h1>
 
-      {/* Revenue Summary */}
-      <div className="grid md:grid-cols-4 gap-4">
+      {/* Trip Filter */}
+      <div className="flex gap-4">
+
+        <Select value={selectedTrip} onValueChange={setSelectedTrip}>
+          <SelectTrigger className="w-64">
+            <SelectValue placeholder="Select Trip" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Trips</SelectItem>
+            {trips.map((trip) => (
+              <SelectItem key={trip.id} value={trip.id}>
+                {trip.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="active_plan">Active Plan</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="past_due">Past Due</SelectItem>
+            <SelectItem value="canceled">Canceled</SelectItem>
+          </SelectContent>
+        </Select>
+
+      </div>
+
+      {/* Trip Summary */}
+      <div className="grid md:grid-cols-3 gap-4">
 
         <Card>
           <CardContent className="pt-6">
@@ -81,63 +114,31 @@ export default function PaymentManager() {
 
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Active Plans</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {activePlans}
+            <p className="text-sm text-gray-500">Total Bookings</p>
+            <p className="text-2xl font-bold">
+              {totalBookings}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Failed / Past Due</p>
-            <p className="text-2xl font-bold text-red-600">
-              {failedPayments}
-            </p>
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-4">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="active_plan">Active Plan</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="past_due">Past Due</SelectItem>
-            <SelectItem value="canceled">Canceled</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={filterPaymentType} onValueChange={setFilterPaymentType}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Payment Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="full">Full</SelectItem>
-            <SelectItem value="plan">Payment Plan</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Payments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Bookings Financial View</CardTitle>
+          <CardTitle>
+            {selectedTrip === 'all'
+              ? 'All Trip Payments'
+              : `Payments for ${getTripName(selectedTrip)}`
+            }
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Guest</TableHead>
-                <TableHead>Payment Type</TableHead>
+                <TableHead>Trip</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Paid</TableHead>
                 <TableHead>Remaining</TableHead>
@@ -156,25 +157,12 @@ export default function PaymentManager() {
                     <TableCell>
                       {b.first_name} {b.last_name}
                     </TableCell>
-
-                    <TableCell>
-                      <Badge variant="outline">
-                        {b.payment_option}
-                      </Badge>
-                    </TableCell>
-
+                    <TableCell>{getTripName(b.trip_id)}</TableCell>
                     <TableCell>{formatCurrency(total)}</TableCell>
                     <TableCell>{formatCurrency(paid)}</TableCell>
                     <TableCell>{formatCurrency(remaining)}</TableCell>
-
                     <TableCell>
-                      <Badge
-                        className={
-                          b.status === 'failed' || b.status === 'past_due'
-                            ? 'bg-red-100 text-red-800'
-                            : ''
-                        }
-                      >
+                      <Badge>
                         {b.status}
                       </Badge>
                     </TableCell>
@@ -182,9 +170,11 @@ export default function PaymentManager() {
                 );
               })}
             </TableBody>
+
           </Table>
         </CardContent>
       </Card>
+
     </div>
   );
 }
