@@ -230,6 +230,17 @@ useEffect(() => {
   return true;
 };
 
+  const isPaymentPlanAvailable = () => {
+    if (!trip) return false;
+    if (!trip.payment_plan_enabled) return false;
+    if (trip.plan_cutoff_date) {
+      const today = new Date();
+      const cutoff = new Date(trip.plan_cutoff_date);
+      if (today >= cutoff) return false;
+    }
+    return true;
+  };
+
   const getPackageName = () => {
     const pkg = packages.find(p => p.id === bookingData.packageType);
     return pkg ? pkg.name : '';
