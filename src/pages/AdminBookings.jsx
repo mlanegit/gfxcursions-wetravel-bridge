@@ -10,22 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminLayout from "@/components/admin/AdminLayout";
 
-export default function AdminBookings() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterTrip, setFilterTrip] = useState('all');
-  const [filterPaymentOption, setFilterPaymentOption] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showRefundDialog, setShowRefundDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [refundAmount, setRefundAmount] = useState('');
-  const [refundMethod, setRefundMethod] = useState('credit_card');
-
-  const queryClient = useQueryClient();
-
+export default function AdminBookingsWrapper() {
+  return (
+    <AdminLayout>
+      <AdminBookings />
+    </AdminLayout>
+  );
+}
   // Fetch bookings
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ['admin-bookings'],
