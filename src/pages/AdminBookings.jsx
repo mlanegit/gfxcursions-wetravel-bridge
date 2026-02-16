@@ -13,22 +13,6 @@ import { toast } from 'sonner';
 import AdminLayout from "@/components/admin/AdminLayout";
 
 function AdminBookings() {
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
-import AdminLayout from "@/components/admin/AdminLayout";
-
-function AdminBookings() {
-
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTrip, setFilterTrip] = useState('all');
   const [filterPaymentOption, setFilterPaymentOption] = useState('all');
