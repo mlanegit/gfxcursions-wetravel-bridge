@@ -303,7 +303,10 @@ export default function Home() {
 
       {/* Booking Wizard Modal */}
       {showBookingWizard && (
-        <BookingWizard onClose={() => setShowBookingWizard(false)} />
+        <BookingWizard
+  tripSlug="lost-in-jamaica"
+  onClose={() => setShowBookingWizard(false)}
+/>
       )}
     </div>
   );
