@@ -136,43 +136,77 @@ useEffect(() => {
   };
 
   const handleBookNow = async () => {
-    console.log("🔥 Confirm Booking clicked");
-    setIsSubmitting(true);
+  console.log("🔥 Confirm Booking clicked");
+  setIsSubmitting(true);
 
-    try {
-      const response = await fetch(
-        "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            firstName: bookingData.firstName,
-            lastName: bookingData.lastName,
-            email: bookingData.email,
-            packageType: bookingData.packageType,
-            nights: bookingData.nights,
-            occupancy: bookingData.occupancy,
-            guests: bookingData.guests,
-            paymentOption: bookingData.paymentOption,
-          })
-        }
-      );
+  try {
+    // 1️⃣ Create Booking inside Base44 FIRST
+    const booking = await base44.entities.Booking.create({
+      trip_id: trip.id,
+      package_id: bookingData.packageType,
+      guests: bookingData.guests,
+      payment_option: bookingData.paymentOption,
+      total_price: getTotalPrice(),
+      deposit_amount:
+        bookingData.paymentOption === "plan"
+          ? getDepositAmount()
+          : null,
+      status: "initiated",
+      first_name: bookingData.firstName,
+      last_name: bookingData.lastName,
+      email: bookingData.email,
+      phone: `${bookingData.countryCode} ${bookingData.phone}`,
+      tshirt_size: bookingData.tshirtSize,
+      guest2_first_name: bookingData.guest2FirstName || null,
+      guest2_last_name: bookingData.guest2LastName || null,
+      guest2_email: bookingData.guest2Email || null,
+      guest2_phone: bookingData.guest2Phone
+        ? `${bookingData.guest2CountryCode} ${bookingData.guest2Phone}`
+        : null,
+      guest2_tshirt_size: bookingData.guest2TshirtSize || null,
+      bed_preference: bookingData.bedPreference || null,
+      referred_by: bookingData.referredBy || null,
+      celebrating_birthday: bookingData.celebratingBirthday || null,
+      notes: bookingData.notes || null,
+      arrival_airline: bookingData.arrivalAirline || null,
+      arrival_date: bookingData.arrivalDate || null,
+      arrival_time: bookingData.arrivalTime || null,
+      departure_airline: bookingData.departureAirline || null,
+      departure_date: bookingData.departureDate || null,
+      departure_time: bookingData.departureTime || null,
+    });
 
-      const data = await response.json();
-      console.log("Stripe response:", data);
+    console.log("✅ Booking created:", booking.id);
 
-      if (!data.url) {
-        throw new Error("Stripe session failed");
+    // 2️⃣ Send bookingId to Stripe backend
+    const response = await fetch(
+      "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          paymentOption: bookingData.paymentOption
+        })
       }
+    );
 
-      window.location.href = data.url;
+    const data = await response.json();
+    console.log("Stripe response:", data);
 
-    } catch (error) {
-      console.error("Stripe error:", error);
-      toast.error("Payment session failed. Please try again.");
-      setIsSubmitting(false);
+    if (!data.url) {
+      throw new Error("Stripe session failed");
     }
-  };
+
+    // 3️⃣ Redirect to Stripe Checkout
+    window.location.href = data.url;
+
+  } catch (error) {
+    console.error("Stripe error:", error);
+    toast.error("Payment session failed. Please try again.");
+    setIsSubmitting(false);
+  }
+};
 
   const canProceed = () => {
    if (step === 1) return bookingData.packageType && bookingData.nights;
