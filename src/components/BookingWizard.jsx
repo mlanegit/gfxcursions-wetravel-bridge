@@ -106,6 +106,7 @@ const [bookingData, setBookingData] = useState({
   if (!trip) return 0;
 
   const depositPerPerson = trip.deposit_per_person || 250;
+  const guests = Number(bookingData.guests) || 0;
 
   return depositPerPerson * bookingData.guests;
 };
