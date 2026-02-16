@@ -9,13 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar, DollarSign, Filter, Loader2, Mail, Phone, Users, Search, ChevronLeft, ChevronRight, Edit, Eye, XCircle } from 'lucide-react';
-import { createPageUrl } from '../utils';
+import { createPageUrl } from '../../utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import PaymentDialog from '../components/PaymentDialog';
-import BookingDetailsDialog from '../components/BookingDetailsDialog';
-import CancelBookingDialog from '../components/CancelBookingDialog';
-import RefundDialog from '../components/RefundDialog';
+import PaymentDialog from '../PaymentDialog';
+import BookingDetailsDialog from '../BookingDetailsDialog';
+import CancelBookingDialog from '../CancelBookingDialog';
+import RefundDialog from '../RefundDialog';
 
 export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all');
