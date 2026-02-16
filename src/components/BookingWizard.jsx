@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -10,9 +10,10 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 export default function BookingWizard({ onClose }) {
-  const [step, setStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookingData, setBookingData] = useState({
+const [step, setStep] = useState(1);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [trip, setTrip] = useState(null);
+const [bookingData, setBookingData] = useState({
     packageType: '',
     nights: '',
     occupancy: '',
