@@ -56,23 +56,18 @@ export default function TripPaymentAdmin() {
     }));
   };
 
-  const handleSave = async () => {
-    if (!selectedTrip) {
-      toast.error('Please select a trip');
-      return;
-    }
-
+  const saveTrip = async () => {
     setIsSaving(true);
 
     try {
       await base44.entities.Trip.update(selectedTrip.id, {
-        deposit_per_person: parseFloat(selectedTrip.deposit_per_person) || 250,
-        payment_plan_enabled: selectedTrip.payment_plan_enabled ?? true,
-        plan_cutoff_date: selectedTrip.plan_cutoff_date || null,
-        plan_dates: (selectedTrip.plan_dates || []).filter(date => date !== ''),
+        deposit_per_person: selectedTrip.deposit_per_person,
+        payment_plan_enabled: selectedTrip.payment_plan_enabled,
+        plan_cutoff_date: selectedTrip.plan_cutoff_date,
+        plan_dates: selectedTrip.plan_dates
       });
 
-      toast.success('Trip payment settings saved successfully');
+      toast.success("Trip payment settings updated");
 
       const updatedTrips = await base44.entities.Trip.list();
       setTrips(updatedTrips);
@@ -249,7 +244,7 @@ export default function TripPaymentAdmin() {
 
                 {/* Save Button */}
                 <Button
-                  onClick={handleSave}
+                  onClick={saveTrip}
                   disabled={isSaving}
                   className="bg-green-600 hover:bg-green-700 text-white font-black uppercase w-full"
                 >
