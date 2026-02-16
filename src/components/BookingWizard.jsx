@@ -140,7 +140,8 @@ useEffect(() => {
   setIsSubmitting(true);
 
   try {
-    // 1️⃣ Create Booking inside Base44 FIRST
+
+    // 1️⃣ Create booking in Base44 FIRST
     const booking = await base44.entities.Booking.create({
       trip_id: trip.id,
       package_id: bookingData.packageType,
@@ -155,50 +156,28 @@ useEffect(() => {
       first_name: bookingData.firstName,
       last_name: bookingData.lastName,
       email: bookingData.email,
-      phone: `${bookingData.countryCode} ${bookingData.phone}`,
-      tshirt_size: bookingData.tshirtSize,
-      guest2_first_name: bookingData.guest2FirstName || null,
-      guest2_last_name: bookingData.guest2LastName || null,
-      guest2_email: bookingData.guest2Email || null,
-      guest2_phone: bookingData.guest2Phone
-        ? `${bookingData.guest2CountryCode} ${bookingData.guest2Phone}`
-        : null,
-      guest2_tshirt_size: bookingData.guest2TshirtSize || null,
-      bed_preference: bookingData.bedPreference || null,
-      referred_by: bookingData.referredBy || null,
-      celebrating_birthday: bookingData.celebratingBirthday || null,
-      notes: bookingData.notes || null,
-      arrival_airline: bookingData.arrivalAirline || null,
-      arrival_date: bookingData.arrivalDate || null,
-      arrival_time: bookingData.arrivalTime || null,
-      departure_airline: bookingData.departureAirline || null,
-      departure_date: bookingData.departureDate || null,
-      departure_time: bookingData.departureTime || null,
+      phone: `${bookingData.countryCode} ${bookingData.phone}`
     });
 
-    console.log("✅ Booking created:", booking.id);
-
-    // 2️⃣ Send bookingId to Stripe backend
+    // 2️⃣ Send ONLY bookingId to backend
     const response = await fetch(
       "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          bookingId: booking.id,
-          paymentOption: bookingData.paymentOption
+          bookingId: booking.id
         })
       }
     );
 
     const data = await response.json();
-    console.log("Stripe response:", data);
 
     if (!data.url) {
       throw new Error("Stripe session failed");
     }
 
-    // 3️⃣ Redirect to Stripe Checkout
+    // 3️⃣ Redirect to Stripe
     window.location.href = data.url;
 
   } catch (error) {
