@@ -155,7 +155,7 @@ useEffect(() => {
             guests: bookingData.guests,
             amountToCharge:
               bookingData.paymentOption === 'plan'
-                ? calculateStripeGross(bookingData.occupancy === 'double' ? 500 : 250)
+                ? calculateStripeGross(getDepositAmount())
                 : getGrossAmountDueToday(),
             totalPrice:
               bookingData.paymentOption === 'plan'
