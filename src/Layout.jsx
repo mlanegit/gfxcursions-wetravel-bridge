@@ -75,9 +75,9 @@ export default function Layout({ children, currentPageName }) {
               Guest Portal
             </Link>
             <Link 
-              to={createPageUrl('Admin')} 
+              to={createPageUrl('AdminDashboard')} 
               className={`text-sm font-bold tracking-wide transition-colors uppercase ${
-                currentPageName === 'Admin' ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
+                currentPageName === 'AdminDashboard' ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
               }`}
             >
               Admin

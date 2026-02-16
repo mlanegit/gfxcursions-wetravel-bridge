@@ -58,6 +58,7 @@ import Home from './pages/Home';
 import Packages from './pages/Packages';
 import TripPaymentSettings from './pages/TripPaymentSettings';
 import TripPaymentAdmin from './pages/TripPaymentAdmin';
+import AdminDashboard from './pages/AdminDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +74,7 @@ export const PAGES = {
     "Packages": Packages,
     "TripPaymentSettings": TripPaymentSettings,
     "TripPaymentAdmin": TripPaymentAdmin,
+    "AdminDashboard": AdminDashboard,
 }
 
 export const pagesConfig = {
