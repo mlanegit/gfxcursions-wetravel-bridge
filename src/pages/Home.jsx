@@ -304,10 +304,10 @@ export default function Home() {
       {/* Booking Wizard Modal */}
       {showBookingWizard && (
         <BookingWizard
-  tripSlug="lost-in-jamaica"
-  onClose={() => setShowBookingWizard(false)}
-/>
-      )}
+          tripSlug="lost-in-jamaica"
+          onClose={() => setShowBookingWizard(false)}
+      />
+    )}
     </div>
   );
 }
