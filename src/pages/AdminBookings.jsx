@@ -12,8 +12,6 @@ import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminBookings() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTrip, setFilterTrip] = useState('all');
   const [filterPaymentOption, setFilterPaymentOption] = useState('all');
@@ -27,25 +25,6 @@ export default function AdminBookings() {
   const [refundMethod, setRefundMethod] = useState('credit_card');
 
   const queryClient = useQueryClient();
-
-  // Check admin access
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        if (currentUser?.role !== 'admin') {
-          window.location.href = '/';
-          return;
-        }
-        setUser(currentUser);
-      } catch (error) {
-        window.location.href = '/';
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
 
   // Fetch bookings
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
@@ -168,14 +147,6 @@ export default function AdminBookings() {
     toast.info('This would cancel the Stripe subscription schedule. Integration needed.');
     // TODO: Implement Stripe API call to cancel subscription schedule
   };
-
-  if (loading || bookingsLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
