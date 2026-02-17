@@ -159,33 +159,26 @@ useEffect(() => {
       payment_option: bookingData.paymentOption,
       total_price_cents: Math.round(getTotalPrice() * 100),
       amount_paid_cents: 0,
-      deposit_amount:
+      deposit_amount_cents:
         bookingData.paymentOption === "plan"
-          ? getDepositAmount()
+          ? Math.round(getDepositAmount() * 100)
           : null,
       status: "initiated",
       first_name: bookingData.firstName,
       last_name: bookingData.lastName,
       email: bookingData.email,
-      phone: `${bookingData.countryCode} ${bookingData.phone}`
+      phone: `${bookingData.countryCode} ${bookingData.phone}`,
     });
 
-    // 2️⃣ Send ONLY bookingId to backend
-    const response = await fetch(
-      "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingId: booking.id
-        })
-      }
-    );
+    // 2️⃣ Call Base44 backend function
+    const response = await base44.functions.invoke('createCheckoutSession', {
+      bookingId: booking.id,
+    });
 
-    const data = await response.json();
+    const data = response.data;
 
     if (!data.url) {
-      throw new Error("Stripe session failed");
+      throw new Error("Stripe session URL missing");
     }
 
     // 3️⃣ Redirect to Stripe
