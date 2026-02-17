@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Users, Music, Waves, Gift, Bus, Star } from 'lucide-react';
 import BookingWizard from '../components/BookingWizard';
 
-export default function BookingWizard({ onClose, tripSlug }) {
+export default function Home() {
   const [showBookingWizard, setShowBookingWizard] = useState(false);
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
