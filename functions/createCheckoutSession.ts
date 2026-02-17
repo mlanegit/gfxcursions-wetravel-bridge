@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
       guests,
       paymentOption,
       totalPriceCents,
-      depositAmountCents,
       depositPerPerson,
       firstName,
       lastName,
@@ -29,7 +28,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Calculate amount securely on the server
+    // Calculate charge amount server-side
     let amountCents;
     if (paymentOption === "plan") {
       const deposit = depositPerPerson || 250;
@@ -41,8 +40,8 @@ Deno.serve(async (req) => {
     // Add Stripe fee (2.9% + $0.30)
     const grossCents = Math.round((amountCents + 30) / (1 - 0.029));
 
-    // 1️⃣ Create booking in the correct DB environment
-    const booking = await base44.asServiceRole.entities.Booking.create({
+    // 1️⃣ Create booking - uses same DB env (dev/prod) as the frontend request
+    const booking = await base44.entities.Booking.create({
       trip_id: tripId,
       package_id: packageId,
       guests: guests,
@@ -82,8 +81,8 @@ Deno.serve(async (req) => {
       cancel_url: "https://radical-task-flow-app.base44.app/cancel",
     });
 
-    // 3️⃣ Save Stripe session ID to booking
-    await base44.asServiceRole.entities.Booking.update(booking.id, {
+    // 3️⃣ Save Stripe session ID back to booking
+    await base44.entities.Booking.update(booking.id, {
       stripe_checkout_session_id: session.id,
     });
 
@@ -91,7 +90,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error("Stripe error:", error.message);
-    console.error("Error data:", JSON.stringify(error.data));
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
