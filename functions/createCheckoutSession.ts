@@ -16,14 +16,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Missing bookingId" }, { status: 400 });
     }
 
-    const booking = await base44.asServiceRole.entities.Booking.get(bookingId);
+    // Use user-scoped client so it respects test/prod DB context from the request
+    const booking = await base44.entities.Booking.get(bookingId);
 
     if (!booking) {
       return Response.json({ error: "Booking not found" }, { status: 404 });
     }
 
     // Fetch trip to get deposit_per_person
-    const trip = await base44.asServiceRole.entities.Trip.get(booking.trip_id);
+    const trip = await base44.entities.Trip.get(booking.trip_id);
 
     // Calculate amount - never trust frontend values
     let amountCents;
