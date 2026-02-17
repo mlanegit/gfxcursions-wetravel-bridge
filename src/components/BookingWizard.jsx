@@ -157,10 +157,10 @@ useEffect(() => {
       package_id: bookingData.packageType,
       guests: bookingData.guests,
       payment_option: bookingData.paymentOption,
-      total_price: getTotalPrice(),
-      deposit_amount:
+      total_price_cents: Math.round(getTotalPrice() * 100),
+      deposit_amount_cents:
         bookingData.paymentOption === "plan"
-          ? getDepositAmount()
+          ? Math.round(getDepositAmount() * 100)
           : null,
       status: "initiated",
       first_name: bookingData.firstName,
