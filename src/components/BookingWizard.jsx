@@ -157,7 +157,8 @@ useEffect(() => {
       package_id: bookingData.packageType,
       guests: bookingData.guests,
       payment_option: bookingData.paymentOption,
-      total_price: getTotalPrice(),
+      total_price_cents: Math.round(getTotalPrice() * 100),
+      amount_paid_cents: 0,
       deposit_amount:
         bookingData.paymentOption === "plan"
           ? getDepositAmount()
