@@ -40,8 +40,8 @@ Deno.serve(async (req) => {
     // Add Stripe fee (2.9% + $0.30)
     const grossCents = Math.round((amountCents + 30) / (1 - 0.029));
 
-    // 1️⃣ Create booking - uses same DB env (dev/prod) as the frontend request
-    const booking = await base44.entities.Booking.create({
+    // 1️⃣ Create booking using service role (works for both logged-in and guest users)
+    const booking = await base44.asServiceRole.entities.Booking.create({
       trip_id: tripId,
       package_id: packageId,
       guests: guests,
@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
     });
 
     // 2️⃣ Create Stripe checkout session
+    const origin = req.headers.get('origin') || 'https://radical-task-flow-app.base44.app';
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -77,19 +78,19 @@ Deno.serve(async (req) => {
         booking_id: booking.id,
         payment_option: paymentOption,
       },
-      success_url: "https://radical-task-flow-app.base44.app/success",
-      cancel_url: "https://radical-task-flow-app.base44.app/cancel",
+      success_url: `${origin}/BookingConfirmation?booking_id=${booking.id}`,
+      cancel_url: `${origin}/Home`,
     });
 
     // 3️⃣ Save Stripe session ID back to booking
-    await base44.entities.Booking.update(booking.id, {
+    await base44.asServiceRole.entities.Booking.update(booking.id, {
       stripe_checkout_session_id: session.id,
     });
 
     return Response.json({ url: session.url, bookingId: booking.id });
 
   } catch (error) {
-    console.error("Stripe error:", error.message);
+    console.error("createCheckoutSession error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
