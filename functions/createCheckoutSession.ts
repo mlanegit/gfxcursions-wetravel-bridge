@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     });
 
     // Save Stripe session ID back to booking
-    await base44.asServiceRole.entities.Booking.update(booking.id, {
+    await base44.entities.Booking.update(booking.id, {
       stripe_checkout_session_id: session.id,
     });
 
