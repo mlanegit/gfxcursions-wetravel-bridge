@@ -150,29 +150,18 @@ useEffect(() => {
   setIsSubmitting(true);
 
   try {
-
-    // 1️⃣ Create booking in Base44 FIRST
-    const booking = await base44.entities.Booking.create({
-      trip_id: trip.id,
-      package_id: bookingData.packageType,
+    // Backend function handles booking creation + Stripe session in same DB context
+    const response = await base44.functions.invoke('createCheckoutSession', {
+      tripId: trip.id,
+      packageId: bookingData.packageType,
       guests: bookingData.guests,
-      payment_option: bookingData.paymentOption,
-      total_price_cents: Math.round(getTotalPrice() * 100),
-      amount_paid_cents: 0,
-      deposit_amount_cents:
-        bookingData.paymentOption === "plan"
-          ? Math.round(getDepositAmount() * 100)
-          : null,
-      status: "initiated",
-      first_name: bookingData.firstName,
-      last_name: bookingData.lastName,
+      paymentOption: bookingData.paymentOption,
+      totalPriceCents: Math.round(getTotalPrice() * 100),
+      depositPerPerson: trip.deposit_per_person || 250,
+      firstName: bookingData.firstName,
+      lastName: bookingData.lastName,
       email: bookingData.email,
       phone: `${bookingData.countryCode} ${bookingData.phone}`,
-    });
-
-    // 2️⃣ Call Base44 backend function
-    const response = await base44.functions.invoke('createCheckoutSession', {
-      bookingId: booking.id,
     });
 
     const data = response.data;
@@ -181,7 +170,7 @@ useEffect(() => {
       throw new Error("Stripe session URL missing");
     }
 
-    // 3️⃣ Redirect to Stripe
+    // Redirect to Stripe
     window.location.href = data.url;
 
   } catch (error) {
