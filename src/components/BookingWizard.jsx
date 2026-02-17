@@ -169,19 +169,10 @@ useEffect(() => {
       phone: `${bookingData.countryCode} ${bookingData.phone}`
     });
 
-    // 2️⃣ Send ONLY bookingId to backend
-    const response = await fetch(
-      "https://radical-stripe-backend.vercel.app/api/create-checkout-session",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bookingId: booking.id
-        })
-      }
-    );
-
-    const data = await response.json();
+    // 2️⃣ Create Stripe checkout session
+    const { data } = await base44.functions.invoke('createStripeCheckout', {
+      bookingId: booking.id
+    });
 
     if (!data.url) {
       throw new Error("Stripe session failed");
