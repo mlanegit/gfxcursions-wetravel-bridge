@@ -10,44 +10,64 @@ Deno.serve(async (req) => {
 
   try {
     const base44 = createClientFromRequest(req);
-    const { bookingId } = await req.json();
 
-    if (!bookingId) {
-      return Response.json({ error: "Missing bookingId" }, { status: 400 });
+    const {
+      tripId,
+      packageId,
+      guests,
+      paymentOption,
+      totalPriceCents,
+      depositAmountCents,
+      depositPerPerson,
+      firstName,
+      lastName,
+      email,
+      phone,
+    } = await req.json();
+
+    if (!tripId || !email || !paymentOption) {
+      return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Use user-scoped client so it respects test/prod DB context from the request
-    const booking = await base44.entities.Booking.get(bookingId);
-
-    if (!booking) {
-      return Response.json({ error: "Booking not found" }, { status: 404 });
-    }
-
-    // Fetch trip to get deposit_per_person
-    const trip = await base44.entities.Trip.get(booking.trip_id);
-
-    // Calculate amount - never trust frontend values
+    // Calculate amount securely on the server
     let amountCents;
-    if (booking.payment_option === "plan") {
-      const depositPerPerson = trip?.deposit_per_person || 250;
-      amountCents = depositPerPerson * booking.guests * 100;
+    if (paymentOption === "plan") {
+      const deposit = depositPerPerson || 250;
+      amountCents = Math.round(deposit * guests * 100);
     } else {
-      amountCents = booking.total_price_cents;
+      amountCents = totalPriceCents;
     }
 
     // Add Stripe fee (2.9% + $0.30)
     const grossCents = Math.round((amountCents + 30) / (1 - 0.029));
 
+    // 1️⃣ Create booking in the correct DB environment
+    const booking = await base44.asServiceRole.entities.Booking.create({
+      trip_id: tripId,
+      package_id: packageId,
+      guests: guests,
+      payment_option: paymentOption,
+      total_price_cents: totalPriceCents,
+      amount_paid_cents: 0,
+      deposit_amount_cents: paymentOption === "plan" ? amountCents : null,
+      status: "initiated",
+      first_name: firstName,
+      last_name: lastName,
+      email: email,
+      phone: phone,
+    });
+
+    // 2️⃣ Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
-      customer_email: booking.email,
+      customer_email: email,
       line_items: [
         {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `Lost in Jamaica - ${booking.package_id} (${booking.payment_option === 'plan' ? 'Deposit' : 'Full Payment'})`,
+              name: `Lost in Jamaica - ${packageId} (${paymentOption === 'plan' ? 'Deposit' : 'Full Payment'})`,
             },
             unit_amount: grossCents,
           },
@@ -56,21 +76,22 @@ Deno.serve(async (req) => {
       ],
       metadata: {
         booking_id: booking.id,
-        payment_option: booking.payment_option,
+        payment_option: paymentOption,
       },
       success_url: "https://radical-task-flow-app.base44.app/success",
       cancel_url: "https://radical-task-flow-app.base44.app/cancel",
     });
 
-    // Save Stripe session ID back to booking
-    await base44.entities.Booking.update(booking.id, {
+    // 3️⃣ Save Stripe session ID to booking
+    await base44.asServiceRole.entities.Booking.update(booking.id, {
       stripe_checkout_session_id: session.id,
     });
 
-    return Response.json({ url: session.url });
+    return Response.json({ url: session.url, bookingId: booking.id });
 
   } catch (error) {
-    console.error("Stripe error:", error);
+    console.error("Stripe error:", error.message);
+    console.error("Error data:", JSON.stringify(error.data));
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
