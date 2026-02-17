@@ -115,12 +115,12 @@ const [bookingData, setBookingData] = useState({
 useEffect(() => {
   const loadTrip = async () => {
     try {
-      const trips = await base44.entities.Trip.list({
-        filter: { slug: tripSlug }
-      });
+      const trips = await base44.entities.Trip.filter({ slug: tripSlug });
 
       if (trips.length > 0) {
         setTrip(trips[0]);
+      } else {
+        console.warn("No trip found with slug:", tripSlug);
       }
     } catch (err) {
       console.error("Failed to load trip", err);
