@@ -5,10 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import InstallmentManager from './InstallmentManager';
 
 export default function PaymentManager() {
   const [selectedTrip, setSelectedTrip] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [expandedBookingId, setExpandedBookingId] = useState(null);
 
   // Fetch bookings
   const { data: bookings = [] } = useQuery({
@@ -151,22 +155,57 @@ export default function PaymentManager() {
                 const total = Number(b.total_price_cents) || 0;
                 const paid = Number(b.amount_paid_cents) || 0;
                 const remaining = total - paid;
+                const isExpanded = expandedBookingId === b.id;
 
                 return (
-                  <TableRow key={b.id}>
-                    <TableCell>
-                      {b.first_name} {b.last_name}
-                    </TableCell>
-                    <TableCell>{getTripName(b.trip_id)}</TableCell>
-                    <TableCell>{formatCurrency(total)}</TableCell>
-                    <TableCell>{formatCurrency(paid)}</TableCell>
-                    <TableCell>{formatCurrency(remaining)}</TableCell>
-                    <TableCell>
-                      <Badge>
-                        {b.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
+                  <React.Fragment key={b.id}>
+                    <TableRow
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() =>
+                        setExpandedBookingId(isExpanded ? null : b.id)
+                      }
+                    >
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="mr-2 -ml-2"
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </Button>
+                        {b.first_name} {b.last_name}
+                      </TableCell>
+                      <TableCell>{getTripName(b.trip_id)}</TableCell>
+                      <TableCell>{formatCurrency(total)}</TableCell>
+                      <TableCell>{formatCurrency(paid)}</TableCell>
+                      <TableCell>{formatCurrency(remaining)}</TableCell>
+                      <TableCell>
+                        <Badge>
+                          {b.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+
+                    {isExpanded && (
+                      <TableRow>
+                        <TableCell colSpan="6" className="bg-gray-50 p-4">
+                          <div className="pl-8">
+                            <h4 className="font-semibold text-sm mb-3">
+                              Payment Schedule
+                            </h4>
+                            <InstallmentManager
+                              bookingId={b.id}
+                              booking={b}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </TableBody>
