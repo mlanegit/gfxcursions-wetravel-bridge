@@ -29,7 +29,7 @@ export default function Home() {
   ];
 
   const handleAdminClick = () => {
-    base44.auth.redirectToLogin(window.location.origin + createPageUrl('AdminDashboard'));
+    window.location.href = createPageUrl('AdminDashboard');
   };
 
   return (
