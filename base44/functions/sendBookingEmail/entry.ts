@@ -33,30 +33,39 @@ Deno.serve(async (req) => {
     const paymentOption = booking.payment_option === 'plan' ? 'Installment Plan' : 'Paid in Full';
     const totalFormatted = `$${((booking.total_price_cents || 0) / 100).toFixed(2)}`;
     const depositFormatted = `$${((booking.deposit_amount_cents || 0) / 100).toFixed(2)}`;
+    const remainingBalance = booking.total_price_cents - booking.amount_paid_cents;
+    const remainingFormatted = `$${(remainingBalance / 100).toFixed(2)}`;
     const nextCharge = booking.plan_next_charge_date || 'N/A';
+
+    // Placeholder values
+    const placeholders = {
+      first_name: firstName,
+      last_name: lastName,
+      package_name: packageId,
+      payment_option_display: paymentOption,
+      guest_count: booking.guests || 1,
+      total_price_usd: totalFormatted.replace('$', ''),
+      deposit_amount_usd: depositFormatted.replace('$', ''),
+      remaining_balance_usd: remainingFormatted.replace('$', ''),
+      plan_next_charge_date: nextCharge,
+      installment_1_date: 'TBD',
+      installment_2_date: 'TBD',
+      installment_3_date: 'TBD',
+      installment_4_date: 'TBD',
+    };
 
     let subject, body;
 
     if (template) {
-      subject = template.subject
-        .replace(/{{first_name}}/g, firstName)
-        .replace(/{{last_name}}/g, lastName)
-        .replace(/{{package_id}}/g, packageId)
-        .replace(/{{payment_option}}/g, paymentOption)
-        .replace(/{{status}}/g, booking.status)
-        .replace(/{{plan_next_charge_date}}/g, nextCharge)
-        .replace(/{{total_price_cents}}/g, totalFormatted)
-        .replace(/{{deposit_amount_cents}}/g, depositFormatted);
+      subject = template.subject;
+      body = template.body;
 
-      body = template.body
-        .replace(/{{first_name}}/g, firstName)
-        .replace(/{{last_name}}/g, lastName)
-        .replace(/{{package_id}}/g, packageId)
-        .replace(/{{payment_option}}/g, paymentOption)
-        .replace(/{{status}}/g, booking.status)
-        .replace(/{{plan_next_charge_date}}/g, nextCharge)
-        .replace(/{{total_price_cents}}/g, totalFormatted)
-        .replace(/{{deposit_amount_cents}}/g, depositFormatted);
+      // Replace all placeholders
+      Object.entries(placeholders).forEach(([key, value]) => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        subject = subject.replace(regex, value);
+        body = body.replace(regex, value);
+      });
     } else {
       // Fallback template
       subject = `You're In! Your Lost in Jamaica Booking is Confirmed`;
