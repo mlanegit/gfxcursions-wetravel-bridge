@@ -40,15 +40,12 @@ export default function Home() {
     setAdminLoading(true);
     setAdminError('');
     try {
-      const { User } = await import('@/api/entities');
-      const users = await User.filter({ email: adminEmail });
-      if (users.length > 0 && users[0].role === 'admin') {
-        window.location.href = createPageUrl('AdminDashboard');
-      } else {
-        setAdminError('Access denied. Admin accounts only.');
-      }
+      const { base44 } = await import('@/api/base44Client');
+      await base44.auth.login(adminEmail, adminPassword);
+      window.location.href = createPageUrl('AdminDashboard');
     } catch (err) {
-      setAdminError('Unable to verify credentials.');
+      console.error(err);
+      setAdminError('Invalid email or password. Please try again.');
     } finally {
       setAdminLoading(false);
     }
