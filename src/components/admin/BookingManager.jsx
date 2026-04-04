@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Search, Eye, X, RefreshCw, Calendar } from 'lucide-react';
+import { Loader2, Search, Eye, X, RefreshCw, Edit2, Save, XCircle, Info, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
 
-// ✅ REAL PAGE CONTENT
-function AdminBookings() {
-  const [user, setUser] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
+const PACKAGE_NAMES = {
+  'luxury-suite': 'Luxury Suite',
+  'diamond-club': 'Luxury Suite Diamond Club',
+  'ocean-view-dc': 'Luxury Ocean View Diamond Club',
+};
 
+function AdminBookings() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTrip, setFilterTrip] = useState('all');
   const [filterPaymentOption, setFilterPaymentOption] = useState('all');
@@ -27,157 +29,170 @@ function AdminBookings() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
   const [cancelReason, setCancelReason] = useState('');
+  const [isCanceling, setIsCanceling] = useState(false);
+
   const [refundAmount, setRefundAmount] = useState('');
-  const [refundMethod, setRefundMethod] = useState('credit_card');
+  const [refundReason, setRefundReason] = useState('requested_by_customer');
+  const [refundNotes, setRefundNotes] = useState('');
+  const [isRefunding, setIsRefunding] = useState(false);
 
   const queryClient = useQueryClient();
 
-  // ✅ Check admin access
-  React.useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        if (currentUser?.role !== 'admin') {
-          window.location.href = '/';
-          return;
-        }
-        setUser(currentUser);
-      } catch (error) {
-        window.location.href = '/';
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  // ✅ Fetch bookings
   const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
     queryKey: ['admin-bookings'],
     queryFn: () => base44.entities.Booking.list('-created_date'),
-    enabled: !!user,
   });
 
-  // ✅ Fetch trips
   const { data: trips = [] } = useQuery({
     queryKey: ['trips'],
     queryFn: () => base44.entities.Trip.list(),
-    enabled: !!user,
   });
-
-  // ✅ Fetch packages
-  const { data: packages = [] } = useQuery({
-    queryKey: ['packages'],
-    queryFn: () => base44.entities.TripPackage.list(),
-    enabled: !!user,
-  });
-
-  // ✅ Cancel booking mutation
-  const cancelBookingMutation = useMutation({
-    mutationFn: async ({ bookingId }) => {
-      return base44.entities.Booking.update(bookingId, {
-        status: 'canceled',
-        notes: cancelReason ? `Cancellation reason: ${cancelReason}` : undefined,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      toast.success('Booking canceled successfully');
-      setShowCancelDialog(false);
-      setCancelReason('');
-      setSelectedBooking(null);
-    },
-    onError: (error) => {
-      toast.error('Failed to cancel booking');
-      console.error(error);
-    },
-  });
-
-  // ✅ Refund mutation
-  const refundMutation = useMutation({
-    mutationFn: async ({ bookingId, amountCents, method }) => {
-      return base44.entities.Booking.update(bookingId, {
-        status: 'canceled',
-        refund_amount_cents: amountCents,
-        refund_date: new Date().toISOString().split('T')[0],
-        refund_method: method,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-      toast.success('Refund processed successfully');
-      setShowRefundDialog(false);
-      setRefundAmount('');
-      setRefundMethod('credit_card');
-      setSelectedBooking(null);
-    },
-    onError: (error) => {
-      toast.error('Failed to process refund');
-      console.error(error);
-    },
-  });
-
-  // Helpers
-  const getTripName = (tripId) => {
-    const trip = trips.find((t) => t.id === tripId);
-    return trip?.name || 'Unknown Trip';
-  };
-
-  const getPackageName = (packageId) => {
-    const pkg = packages.find((p) => p.id === packageId);
-    return pkg?.label || pkg?.name || 'Unknown Package';
-  };
 
   const formatCurrency = (cents) => {
     if (cents === null || cents === undefined) return '$0.00';
     return `$${(Number(cents) / 100).toFixed(2)}`;
   };
 
+  const getTripName = (tripId) => trips.find((t) => t.id === tripId)?.name || 'Unknown Trip';
+  const getPackageName = (packageId) => PACKAGE_NAMES[packageId] || packageId || '—';
+
   const getStatusBadge = (status) => {
     const colors = {
-      initiated: 'bg-yellow-100 text-yellow-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      initiated: 'bg-blue-100 text-blue-800',
       paid: 'bg-green-100 text-green-800',
-      active_plan: 'bg-blue-100 text-blue-800',
+      active_plan: 'bg-emerald-100 text-emerald-800',
       canceled: 'bg-red-100 text-red-800',
       failed: 'bg-red-100 text-red-800',
       past_due: 'bg-orange-100 text-orange-800',
     };
     return (
       <Badge className={colors[status] || 'bg-gray-100 text-gray-800'}>
-        {(status || 'unknown').replace('_', ' ').toUpperCase()}
+        {(status || 'unknown').replace(/_/g, ' ').toUpperCase()}
       </Badge>
     );
   };
 
-  // Filter bookings
-  const filteredBookings = bookings.filter((booking) => {
+  // ── Filters ────────────────────────────────────────────────────────────────
+
+  const filteredBookings = bookings.filter((b) => {
     const matchesSearch =
       searchTerm === '' ||
-      booking.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.email?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesTrip = filterTrip === 'all' || booking.trip_id === filterTrip;
-    const matchesPayment =
-      filterPaymentOption === 'all' || booking.payment_option === filterPaymentOption;
-    const matchesStatus = filterStatus === 'all' || booking.status === filterStatus;
-
+      b.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTrip = filterTrip === 'all' || b.trip_id === filterTrip;
+    const matchesPayment = filterPaymentOption === 'all' || b.payment_option === filterPaymentOption;
+    const matchesStatus = filterStatus === 'all' || b.status === filterStatus;
     return matchesSearch && matchesTrip && matchesPayment && matchesStatus;
   });
 
-  const handleCancelSubscriptionSchedule = async (booking) => {
-    if (!booking.stripe_subscription_schedule_id) {
-      toast.error('No subscription schedule found');
-      return;
-    }
-    toast.info('This would cancel the Stripe subscription schedule. Integration needed.');
-    // TODO: call your backend Stripe endpoint to cancel schedule
+  // ── Edit ───────────────────────────────────────────────────────────────────
+
+  const startEditing = () => {
+    setEditForm({
+      first_name: selectedBooking.first_name || '',
+      last_name: selectedBooking.last_name || '',
+      email: selectedBooking.email || '',
+      phone: selectedBooking.phone || '',
+      tshirt_size: selectedBooking.tshirt_size || '',
+      guest2_first_name: selectedBooking.guest2_first_name || '',
+      guest2_last_name: selectedBooking.guest2_last_name || '',
+      guest2_email: selectedBooking.guest2_email || '',
+      guest2_phone: selectedBooking.guest2_phone || '',
+      guest2_tshirt_size: selectedBooking.guest2_tshirt_size || '',
+      bed_preference: selectedBooking.bed_preference || '',
+      arrival_airline: selectedBooking.arrival_airline || '',
+      arrival_date: selectedBooking.arrival_date || '',
+      arrival_time: selectedBooking.arrival_time || '',
+      departure_airline: selectedBooking.departure_airline || '',
+      departure_date: selectedBooking.departure_date || '',
+      departure_time: selectedBooking.departure_time || '',
+      notes: selectedBooking.notes || '',
+    });
+    setIsEditing(true);
   };
 
-  if (loading || bookingsLoading) {
+  const ef = (key, val) => setEditForm((f) => ({ ...f, [key]: val }));
+
+  const handleSaveEdit = async () => {
+    setIsSaving(true);
+    try {
+      const updated = await base44.entities.Booking.update(selectedBooking.id, editForm);
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      setSelectedBooking(updated);
+      setIsEditing(false);
+      toast.success('Booking updated');
+    } catch (err) {
+      toast.error('Failed to update booking');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── Cancel ─────────────────────────────────────────────────────────────────
+
+  const handleCancel = async () => {
+    setIsCanceling(true);
+    try {
+      await base44.entities.Booking.update(selectedBooking.id, {
+        status: 'canceled',
+        notes: cancelReason ? `Cancellation reason: ${cancelReason}` : undefined,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      toast.success('Booking canceled');
+      setShowCancelDialog(false);
+      setCancelReason('');
+      setSelectedBooking(null);
+    } catch (err) {
+      toast.error('Failed to cancel booking');
+      console.error(err);
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
+  // ── Refund ─────────────────────────────────────────────────────────────────
+
+  const handleRefund = async () => {
+    setIsRefunding(true);
+    try {
+      const amountCents = Math.round(parseFloat(refundAmount) * 100);
+      const response = await base44.functions.invoke('processRefund', {
+        bookingId: selectedBooking.id,
+        amountCents,
+        reason: refundReason,
+        refundMethod: refundReason === 'manual' ? 'manual' : 'credit_card',
+      });
+      const data = response?.data || response;
+      if (data?.success) {
+        toast.success(data.message);
+        queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+        setShowRefundDialog(false);
+        setRefundAmount('');
+        setRefundNotes('');
+        setRefundReason('requested_by_customer');
+        setSelectedBooking(null);
+      } else {
+        toast.error(data?.error || 'Refund failed');
+      }
+    } catch (err) {
+      toast.error('Refund failed — check console');
+      console.error(err);
+    } finally {
+      setIsRefunding(false);
+    }
+  };
+
+  if (bookingsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-green-600" />
       </div>
     );
@@ -195,49 +210,35 @@ function AdminBookings() {
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div className="md:col-span-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+              <div className="md:col-span-2 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-
               <Select value={filterTrip} onValueChange={setFilterTrip}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Trips" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="All Trips" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Trips</SelectItem>
-                  {trips.map((trip) => (
-                    <SelectItem key={trip.id} value={trip.id}>
-                      {trip.name}
-                    </SelectItem>
-                  ))}
+                  {trips.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-
               <Select value={filterPaymentOption} onValueChange={setFilterPaymentOption}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Payment Option" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Payment Option" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Payment Options</SelectItem>
                   <SelectItem value="full">Full Payment</SelectItem>
                   <SelectItem value="plan">Payment Plan</SelectItem>
                 </SelectContent>
               </Select>
-
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="initiated">Initiated</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="active_plan">Active Plan</SelectItem>
@@ -250,7 +251,7 @@ function AdminBookings() {
           </CardContent>
         </Card>
 
-        {/* Bookings Table */}
+        {/* Table */}
         <Card>
           <CardHeader>
             <CardTitle>Bookings ({filteredBookings.length})</CardTitle>
@@ -260,15 +261,15 @@ function AdminBookings() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Guest Name</TableHead>
+                    <TableHead>Guest</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Trip</TableHead>
                     <TableHead>Package</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Paid</TableHead>
+                    <TableHead>Deposit</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Schedule ID</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -282,12 +283,12 @@ function AdminBookings() {
                   ) : (
                     filteredBookings.map((booking) => (
                       <TableRow key={booking.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium whitespace-nowrap">
                           {booking.first_name} {booking.last_name}
                         </TableCell>
                         <TableCell>{booking.email}</TableCell>
-                        <TableCell>{getTripName(booking.trip_id)}</TableCell>
-                        <TableCell>{getPackageName(booking.package_id)}</TableCell>
+                        <TableCell className="whitespace-nowrap">{getTripName(booking.trip_id)}</TableCell>
+                        <TableCell className="whitespace-nowrap">{getPackageName(booking.package_id)}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
                             {booking.payment_option === 'full' ? 'Full' : 'Plan'}
@@ -295,69 +296,22 @@ function AdminBookings() {
                         </TableCell>
                         <TableCell>{formatCurrency(booking.total_price_cents)}</TableCell>
                         <TableCell>{formatCurrency(booking.amount_paid_cents)}</TableCell>
+                        <TableCell>{formatCurrency(booking.deposit_amount_cents)}</TableCell>
                         <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                        <TableCell className="text-xs text-gray-500">
-                          {booking.stripe_subscription_schedule_id ? (
-                            <span
-                              className="truncate block max-w-[120px]"
-                              title={booking.stripe_subscription_schedule_id}
-                            >
-                              {booking.stripe_subscription_schedule_id.substring(0, 15)}...
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedBooking(booking);
-                                setShowDetailsDialog(true);
-                              }}
-                            >
+                            <Button size="sm" variant="outline" onClick={() => { setSelectedBooking(booking); setIsEditing(false); setShowDetailsDialog(true); }}>
                               <Eye className="w-4 h-4" />
                             </Button>
-
                             {booking.status !== 'canceled' && (
                               <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowCancelDialog(true);
-                                  }}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => { setSelectedBooking(booking); setShowCancelDialog(true); }}>
                                   <X className="w-4 h-4" />
                                 </Button>
-
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setRefundAmount(
-                                      ((booking.total_price_cents || 0) / 100).toFixed(2)
-                                    );
-                                    setShowRefundDialog(true);
-                                  }}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => { setSelectedBooking(booking); setRefundAmount(((booking.amount_paid_cents || 0) / 100).toFixed(2)); setShowRefundDialog(true); }}>
                                   <RefreshCw className="w-4 h-4" />
                                 </Button>
                               </>
-                            )}
-
-                            {booking.stripe_subscription_schedule_id && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCancelSubscriptionSchedule(booking)}
-                              >
-                                <Calendar className="w-4 h-4" />
-                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -371,136 +325,185 @@ function AdminBookings() {
         </Card>
       </div>
 
-      {/* Booking Details Dialog */}
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      {/* ── Details / Edit Dialog ── */}
+      <Dialog open={showDetailsDialog} onOpenChange={(open) => { setShowDetailsDialog(open); if (!open) setIsEditing(false); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Booking Details</DialogTitle>
+            <DialogTitle className="flex items-center justify-between pr-6">
+              <span>Booking Details</span>
+              {!isEditing && selectedBooking?.status !== 'canceled' && (
+                <Button size="sm" variant="outline" onClick={startEditing}>
+                  <Edit2 className="w-4 h-4 mr-1" /> Edit
+                </Button>
+              )}
+            </DialogTitle>
           </DialogHeader>
 
-          {selectedBooking && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Guest Name</p>
-                  <p className="font-medium">
-                    {selectedBooking.first_name} {selectedBooking.last_name}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{selectedBooking.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Phone</p>
-                  <p className="font-medium">{selectedBooking.phone || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <div className="mt-1">{getStatusBadge(selectedBooking.status)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Trip</p>
-                  <p className="font-medium">{getTripName(selectedBooking.trip_id)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Package</p>
-                  <p className="font-medium">{getPackageName(selectedBooking.package_id)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Guests</p>
-                  <p className="font-medium">{selectedBooking.guests}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Payment Option</p>
-                  <p className="font-medium">
-                    {selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Total Price</p>
-                  <p className="font-medium">{formatCurrency(selectedBooking.total_price_cents)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Amount Paid</p>
-                  <p className="font-medium">{formatCurrency(selectedBooking.amount_paid_cents)}</p>
-                </div>
+          {selectedBooking && !isEditing && (
+            <div className="space-y-6">
+              <Section title="Guest">
+                <Row label="Name" value={`${selectedBooking.first_name} ${selectedBooking.last_name}`} />
+                <Row label="Email" value={selectedBooking.email} />
+                <Row label="Phone" value={selectedBooking.phone} />
+                <Row label="T-Shirt" value={selectedBooking.tshirt_size} />
+                <Row label="Birthday" value={selectedBooking.celebrating_birthday} />
+                <Row label="Bed Pref" value={selectedBooking.bed_preference} />
+                <Row label="Referred By" value={selectedBooking.referred_by} />
+              </Section>
 
-                {selectedBooking.stripe_subscription_schedule_id && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-500">Subscription Schedule ID</p>
-                    <p className="font-mono text-xs">
-                      {selectedBooking.stripe_subscription_schedule_id}
-                    </p>
-                  </div>
-                )}
+              {selectedBooking.guest2_first_name && (
+                <Section title="Roommate">
+                  <Row label="Name" value={`${selectedBooking.guest2_first_name} ${selectedBooking.guest2_last_name}`} />
+                  <Row label="Email" value={selectedBooking.guest2_email} />
+                  <Row label="Phone" value={selectedBooking.guest2_phone} />
+                  <Row label="T-Shirt" value={selectedBooking.guest2_tshirt_size} />
+                </Section>
+              )}
 
-                {selectedBooking.notes && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-500">Notes</p>
-                    <p className="font-medium">{selectedBooking.notes}</p>
-                  </div>
+              <Section title="Booking">
+                <Row label="Trip" value={getTripName(selectedBooking.trip_id)} />
+                <Row label="Package" value={getPackageName(selectedBooking.package_id)} />
+                <Row label="Guests" value={selectedBooking.guests} />
+                <Row label="Payment" value={selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan'} />
+                <Row label="Status" value={getStatusBadge(selectedBooking.status)} />
+              </Section>
+
+              <Section title="Financials">
+                <Row label="Total" value={formatCurrency(selectedBooking.total_price_cents)} />
+                <Row label="Paid" value={formatCurrency(selectedBooking.amount_paid_cents)} />
+                <Row label="Deposit" value={formatCurrency(selectedBooking.deposit_amount_cents)} />
+                <Row label="Balance Due" value={formatCurrency((selectedBooking.total_price_cents || 0) - (selectedBooking.amount_paid_cents || 0))} />
+                {selectedBooking.refund_amount_cents && (
+                  <Row label="Refunded" value={`${formatCurrency(selectedBooking.refund_amount_cents)} via ${selectedBooking.refund_method} on ${selectedBooking.refund_date}`} />
                 )}
+                {selectedBooking.refund_notes && (
+                  <Row label="Refund Notes" value={selectedBooking.refund_notes} />
+                )}
+              </Section>
+
+              {(selectedBooking.arrival_airline || selectedBooking.departure_airline) && (
+                <Section title="Travel">
+                  {selectedBooking.arrival_airline && (
+                    <Row label="Arrival" value={`${selectedBooking.arrival_airline} — ${selectedBooking.arrival_date} ${selectedBooking.arrival_time}`} />
+                  )}
+                  {selectedBooking.departure_airline && (
+                    <Row label="Departure" value={`${selectedBooking.departure_airline} — ${selectedBooking.departure_date} ${selectedBooking.departure_time}`} />
+                  )}
+                </Section>
+              )}
+
+              {selectedBooking.notes && (
+                <Section title="Notes">
+                  <p className="text-sm text-gray-700">{selectedBooking.notes}</p>
+                </Section>
+              )}
+            </div>
+          )}
+
+          {selectedBooking && isEditing && (
+            <div className="space-y-6">
+              <Section title="Guest Info">
+                <EditRow label="First Name" value={editForm.first_name} onChange={(v) => ef('first_name', v)} />
+                <EditRow label="Last Name" value={editForm.last_name} onChange={(v) => ef('last_name', v)} />
+                <EditRow label="Email" value={editForm.email} onChange={(v) => ef('email', v)} />
+                <EditRow label="Phone" value={editForm.phone} onChange={(v) => ef('phone', v)} />
+                <div>
+                  <label className="text-xs text-gray-500 uppercase font-bold">T-Shirt Size</label>
+                  <Select value={editForm.tshirt_size} onValueChange={(v) => ef('tshirt_size', v)}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {['XS','S','M','L','XL','XXL','3XL'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </Section>
+
+              {selectedBooking.guests > 1 && (
+                <Section title="Roommate Info">
+                  <EditRow label="First Name" value={editForm.guest2_first_name} onChange={(v) => ef('guest2_first_name', v)} />
+                  <EditRow label="Last Name" value={editForm.guest2_last_name} onChange={(v) => ef('guest2_last_name', v)} />
+                  <EditRow label="Email" value={editForm.guest2_email} onChange={(v) => ef('guest2_email', v)} />
+                  <EditRow label="Phone" value={editForm.guest2_phone} onChange={(v) => ef('guest2_phone', v)} />
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase font-bold">T-Shirt Size</label>
+                    <Select value={editForm.guest2_tshirt_size} onValueChange={(v) => ef('guest2_tshirt_size', v)}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {['XS','S','M','L','XL','XXL','3XL'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Section>
+              )}
+
+              <Section title="Travel Info">
+                <EditRow label="Arrival Airline" value={editForm.arrival_airline} onChange={(v) => ef('arrival_airline', v)} />
+                <EditRow label="Arrival Date" value={editForm.arrival_date} onChange={(v) => ef('arrival_date', v)} type="date" />
+                <EditRow label="Arrival Time" value={editForm.arrival_time} onChange={(v) => ef('arrival_time', v)} type="time" />
+                <EditRow label="Departure Airline" value={editForm.departure_airline} onChange={(v) => ef('departure_airline', v)} />
+                <EditRow label="Departure Date" value={editForm.departure_date} onChange={(v) => ef('departure_date', v)} type="date" />
+                <EditRow label="Departure Time" value={editForm.departure_time} onChange={(v) => ef('departure_time', v)} type="time" />
+              </Section>
+
+              <Section title="Notes">
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => ef('notes', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm min-h-[80px]"
+                  placeholder="Internal notes..."
+                />
+              </Section>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
+                  <XCircle className="w-4 h-4 mr-1" /> Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleSaveEdit}
+                  disabled={isSaving}
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                  Save Changes
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Booking Dialog */}
+      {/* ── Cancel Dialog ── */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cancel Booking</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to cancel this booking? This action cannot be undone.
-            </DialogDescription>
+            <DialogDescription>This will mark the booking as canceled. Cannot be undone.</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Cancellation Reason (Optional)</label>
-              <Input
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Enter reason..."
-                className="mt-2"
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium">Reason (optional)</label>
+            <Input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="Enter reason..." className="mt-2" />
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-              Keep Booking
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => cancelBookingMutation.mutate({ bookingId: selectedBooking.id })}
-              disabled={cancelBookingMutation.isPending}
-            >
-              {cancelBookingMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Canceling...
-                </>
-              ) : (
-                'Cancel Booking'
-              )}
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>Keep Booking</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={isCanceling}>
+              {isCanceling ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Cancel Booking
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Refund Dialog */}
+      {/* ── Refund Dialog ── */}
       <Dialog open={showRefundDialog} onOpenChange={setShowRefundDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Process Refund</DialogTitle>
             <DialogDescription>
-              Enter refund details below. This will mark the booking as canceled.
+              {selectedBooking?.stripe_payment_intent_id
+                ? '✅ Stripe payment found — refund will be processed automatically.'
+                : '⚠️ No Stripe payment on record — this will be recorded as a manual refund only.'}
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">Refund Amount ($)</label>
@@ -512,48 +515,41 @@ function AdminBookings() {
                 placeholder="0.00"
                 className="mt-2"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Amount paid: {formatCurrency(selectedBooking?.amount_paid_cents)}
+              </p>
             </div>
-
             <div>
-              <label className="text-sm font-medium">Refund Method</label>
-              <Select value={refundMethod} onValueChange={setRefundMethod}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
+              <label className="text-sm font-medium">Reason</label>
+              <Select value={refundReason} onValueChange={setRefundReason}>
+                <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="credit_card">Credit Card</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="check">Check</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="requested_by_customer">Requested by Customer</SelectItem>
+                  <SelectItem value="duplicate">Duplicate Charge</SelectItem>
+                  <SelectItem value="fraudulent">Fraudulent</SelectItem>
+                  <SelectItem value="manual">Other / Manual</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="text-sm font-medium">Notes (optional)</label>
+              <Input
+                value={refundNotes}
+                onChange={(e) => setRefundNotes(e.target.value)}
+                placeholder="e.g. medical emergency"
+                className="mt-2"
+              />
+            </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRefundDialog(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowRefundDialog(false)}>Cancel</Button>
             <Button
-              onClick={() => {
-                const amountCents = Math.round(parseFloat(refundAmount) * 100);
-                refundMutation.mutate({
-                  bookingId: selectedBooking.id,
-                  amountCents,
-                  method: refundMethod,
-                });
-              }}
-              disabled={!refundAmount || refundMutation.isPending}
+              onClick={handleRefund}
+              disabled={!refundAmount || isRefunding}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
-              {refundMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Process Refund'
-              )}
+              {isRefunding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Process Refund
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -562,7 +558,36 @@ function AdminBookings() {
   );
 }
 
-// ✅ WRAPPER EXPORT (what the router imports)
+// ── Helper UI Components ──────────────────────────────────────────────────────
+
+function Section({ title, children }) {
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">{title}</p>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function Row({ label, value }) {
+  if (!value && value !== 0) return null;
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-medium text-gray-900">{value}</span>
+    </div>
+  );
+}
+
+function EditRow({ label, value, onChange, type = 'text' }) {
+  return (
+    <div>
+      <label className="text-xs text-gray-500 uppercase font-bold">{label}</label>
+      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1" />
+    </div>
+  );
+}
+
 export default function AdminBookingsWrapper() {
   return (
     <AdminLayout>
