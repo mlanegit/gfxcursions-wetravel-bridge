@@ -12,9 +12,13 @@ import { Loader2, Edit2, Trash2, Check, X } from 'lucide-react';
 const TRIGGERS = [
   { value: 'booking_confirmed', label: 'Booking Confirmed' },
   { value: 'payment_received', label: 'Payment Received' },
-  { value: 'booking_cancelled', label: 'Booking Cancelled' },
+  { value: 'payment_failed', label: 'Payment Failed' },
+  { value: 'payment_reminder_7d', label: 'Payment Reminder (7 Days)' },
+  { value: 'balance_reminder_30d', label: 'Balance Reminder (30 Days)' },
+  { value: 'trip_paid_in_full', label: 'Trip Paid in Full' },
   { value: 'payment_reminder', label: 'Payment Reminder' },
   { value: 'arrival_reminder', label: 'Arrival Reminder' },
+  { value: 'booking_cancelled', label: 'Booking Cancelled' },
 ];
 
 export default function EmailTemplateManager() {

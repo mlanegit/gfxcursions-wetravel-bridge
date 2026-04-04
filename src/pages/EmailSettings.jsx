@@ -116,9 +116,13 @@ export default function EmailSettings() {
   const triggerLabels = {
     booking_confirmed: 'Booking Confirmed',
     payment_received: 'Payment Received',
-    booking_cancelled: 'Booking Cancelled',
+    payment_failed: 'Payment Failed',
+    payment_reminder_7d: 'Payment Reminder (7 Days)',
+    balance_reminder_30d: 'Balance Reminder (30 Days)',
+    trip_paid_in_full: 'Trip Paid in Full',
     payment_reminder: 'Payment Reminder',
     arrival_reminder: 'Arrival Reminder',
+    booking_cancelled: 'Booking Cancelled',
   };
 
   if (isLoadingUser) {
@@ -193,12 +197,16 @@ export default function EmailSettings() {
                       <SelectValue placeholder="Select trigger" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="booking_confirmed">Booking Confirmed</SelectItem>
-                      <SelectItem value="payment_received">Payment Received</SelectItem>
-                      <SelectItem value="booking_cancelled">Booking Cancelled</SelectItem>
-                      <SelectItem value="payment_reminder">Payment Reminder</SelectItem>
-                      <SelectItem value="arrival_reminder">Arrival Reminder</SelectItem>
-                    </SelectContent>
+                       <SelectItem value="booking_confirmed">Booking Confirmed</SelectItem>
+                       <SelectItem value="payment_received">Payment Received</SelectItem>
+                       <SelectItem value="payment_failed">Payment Failed</SelectItem>
+                       <SelectItem value="payment_reminder_7d">Payment Reminder (7 Days)</SelectItem>
+                       <SelectItem value="balance_reminder_30d">Balance Reminder (30 Days)</SelectItem>
+                       <SelectItem value="trip_paid_in_full">Trip Paid in Full</SelectItem>
+                       <SelectItem value="payment_reminder">Payment Reminder</SelectItem>
+                       <SelectItem value="arrival_reminder">Arrival Reminder</SelectItem>
+                       <SelectItem value="booking_cancelled">Booking Cancelled</SelectItem>
+                     </SelectContent>
                   </Select>
                 </div>
               </div>
