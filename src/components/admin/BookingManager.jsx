@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Search, Eye, X, RefreshCw, Edit2, Save, XCircle, Info, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Eye, X, RefreshCw, Edit2, Save, XCircle, Info, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
 
@@ -35,6 +35,11 @@ function AdminBookings() {
 
   const [isEditingFinancials, setIsEditingFinancials] = useState(false);
   const [financialForm, setFinancialForm] = useState({});
+
+  const [activeTab, setActiveTab] = useState('guest'); // 'guest' | 'financials' | 'payment'
+  const [isEditingPaymentSchedule, setIsEditingPaymentSchedule] = useState(false);
+  const [paymentScheduleForm, setPaymentScheduleForm] = useState({});
+  const [manualPaymentAmount, setManualPaymentAmount] = useState('');
 
   const [cancelReason, setCancelReason] = useState('');
   const [isCanceling, setIsCanceling] = useState(false);
@@ -130,6 +135,46 @@ function AdminBookings() {
       deposit_amount_cents: selectedBooking.deposit_amount_cents || 0,
     });
     setIsEditingFinancials(true);
+  };
+
+  const startEditingPaymentSchedule = () => {
+    setPaymentScheduleForm({
+      plan_next_charge_date: selectedBooking.plan_next_charge_date || '',
+      plan_installments_remaining: selectedBooking.plan_installments_remaining || 0,
+      plan_anchor_dates: [...(selectedBooking.plan_anchor_dates || [])],
+    });
+    setIsEditingPaymentSchedule(true);
+  };
+
+  const handleSavePaymentSchedule = async () => {
+    try {
+      const updated = await base44.entities.Booking.update(selectedBooking.id, paymentScheduleForm);
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      setSelectedBooking(updated);
+      setIsEditingPaymentSchedule(false);
+      toast.success('Payment schedule updated');
+    } catch (err) {
+      toast.error('Failed to update payment schedule');
+    }
+  };
+
+  const handleManualPayment = async () => {
+    if (!manualPaymentAmount || isNaN(parseFloat(manualPaymentAmount))) return;
+    try {
+      const addCents = Math.round(parseFloat(manualPaymentAmount) * 100);
+      const newPaid = (selectedBooking.amount_paid_cents || 0) + addCents;
+      const newRemaining = Math.max((selectedBooking.plan_installments_remaining || 0) - 1, 0);
+      const updated = await base44.entities.Booking.update(selectedBooking.id, {
+        amount_paid_cents: newPaid,
+        plan_installments_remaining: newRemaining,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      setSelectedBooking(updated);
+      setManualPaymentAmount('');
+      toast.success(`$${manualPaymentAmount} recorded — new balance: ${formatCurrency(updated.total_price_cents - updated.amount_paid_cents)}`);
+    } catch (err) {
+      toast.error('Failed to record payment');
+    }
   };
 
   const handleSaveFinancials = async () => {
@@ -350,7 +395,7 @@ function AdminBookings() {
       </div>
 
       {/* ── Details / Edit Dialog ── */}
-      <Dialog open={showDetailsDialog} onOpenChange={(open) => { setShowDetailsDialog(open); if (!open) { setIsEditing(false); setIsEditingFinancials(false); } }}>
+      <Dialog open={showDetailsDialog} onOpenChange={(open) => { setShowDetailsDialog(open); if (!open) { setIsEditing(false); setIsEditingFinancials(false); setIsEditingPaymentSchedule(false); setActiveTab('guest'); setManualPaymentAmount(''); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between pr-6">
@@ -364,88 +409,222 @@ function AdminBookings() {
           </DialogHeader>
 
           {selectedBooking && !isEditing && (
-            <div className="space-y-6">
-              <Section title="Guest">
-                <Row label="Name" value={`${selectedBooking.first_name} ${selectedBooking.last_name}`} />
-                <Row label="Email" value={selectedBooking.email} />
-                <Row label="Phone" value={selectedBooking.phone} />
-                <Row label="T-Shirt" value={selectedBooking.tshirt_size} />
-                <Row label="Birthday" value={selectedBooking.celebrating_birthday} />
-                <Row label="Bed Pref" value={selectedBooking.bed_preference} />
-                <Row label="Referred By" value={selectedBooking.referred_by} />
-              </Section>
+            <div className="space-y-4">
+              {/* Tab Bar */}
+              <div className="flex border-b border-gray-200">
+                {['guest', 'financials', 'payment'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${
+                      activeTab === tab
+                        ? 'border-green-600 text-green-700'
+                        : 'border-transparent text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {tab === 'guest' ? 'Guest Info' : tab === 'financials' ? 'Financials' : 'Payment Schedule'}
+                  </button>
+                ))}
+              </div>
 
-              {selectedBooking.guest2_first_name && (
-                <Section title="Roommate">
-                  <Row label="Name" value={`${selectedBooking.guest2_first_name} ${selectedBooking.guest2_last_name}`} />
-                  <Row label="Email" value={selectedBooking.guest2_email} />
-                  <Row label="Phone" value={selectedBooking.guest2_phone} />
-                  <Row label="T-Shirt" value={selectedBooking.guest2_tshirt_size} />
-                </Section>
+              {/* Guest Info Tab */}
+              {activeTab === 'guest' && (
+                <div className="space-y-6">
+                  <Section title="Guest">
+                    <Row label="Name" value={`${selectedBooking.first_name} ${selectedBooking.last_name}`} />
+                    <Row label="Email" value={selectedBooking.email} />
+                    <Row label="Phone" value={selectedBooking.phone} />
+                    <Row label="T-Shirt" value={selectedBooking.tshirt_size} />
+                    <Row label="Birthday" value={selectedBooking.celebrating_birthday} />
+                    <Row label="Bed Pref" value={selectedBooking.bed_preference} />
+                    <Row label="Referred By" value={selectedBooking.referred_by} />
+                  </Section>
+
+                  {selectedBooking.guest2_first_name && (
+                    <Section title="Roommate">
+                      <Row label="Name" value={`${selectedBooking.guest2_first_name} ${selectedBooking.guest2_last_name}`} />
+                      <Row label="Email" value={selectedBooking.guest2_email} />
+                      <Row label="Phone" value={selectedBooking.guest2_phone} />
+                      <Row label="T-Shirt" value={selectedBooking.guest2_tshirt_size} />
+                    </Section>
+                  )}
+
+                  <Section title="Booking">
+                    <Row label="Trip" value={getTripName(selectedBooking.trip_id)} />
+                    <Row label="Package" value={getPackageName(selectedBooking.package_id)} />
+                    <Row label="Guests" value={selectedBooking.guests} />
+                    <Row label="Payment" value={selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan'} />
+                    <Row label="Status" value={getStatusBadge(selectedBooking.status)} />
+                  </Section>
+
+                  {(selectedBooking.arrival_airline || selectedBooking.departure_airline) && (
+                    <Section title="Travel">
+                      {selectedBooking.arrival_airline && (
+                        <Row label="Arrival" value={`${selectedBooking.arrival_airline} — ${selectedBooking.arrival_date} ${selectedBooking.arrival_time}`} />
+                      )}
+                      {selectedBooking.departure_airline && (
+                        <Row label="Departure" value={`${selectedBooking.departure_airline} — ${selectedBooking.departure_date} ${selectedBooking.departure_time}`} />
+                      )}
+                    </Section>
+                  )}
+
+                  {selectedBooking.notes && (
+                    <Section title="Notes">
+                      <p className="text-sm text-gray-700">{selectedBooking.notes}</p>
+                    </Section>
+                  )}
+                </div>
               )}
 
-              <Section title="Booking">
-                <Row label="Trip" value={getTripName(selectedBooking.trip_id)} />
-                <Row label="Package" value={getPackageName(selectedBooking.package_id)} />
-                <Row label="Guests" value={selectedBooking.guests} />
-                <Row label="Payment" value={selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan'} />
-                <Row label="Status" value={getStatusBadge(selectedBooking.status)} />
-              </Section>
-
-              <Section
-                title="Financials"
-                action={
-                  !isEditing && selectedBooking?.status !== 'canceled' && (
-                    <button
-                      onClick={startEditingFinancials}
-                      className="text-xs text-blue-600 hover:underline font-bold uppercase"
-                    >
-                      Adjust
-                    </button>
-                  )
-                }
-              >
-                {!isEditingFinancials ? (
-                  <>
-                    <Row label="Total" value={formatCurrency(selectedBooking.total_price_cents)} />
-                    <Row label="Paid" value={formatCurrency(selectedBooking.amount_paid_cents)} />
-                    <Row label="Deposit" value={formatCurrency(selectedBooking.deposit_amount_cents)} />
-                    <Row label="Balance Due" value={formatCurrency((selectedBooking.total_price_cents || 0) - (selectedBooking.amount_paid_cents || 0))} />
-                    {selectedBooking.refund_amount_cents && (
-                      <Row label="Refunded" value={`${formatCurrency(selectedBooking.refund_amount_cents)} via ${selectedBooking.refund_method} on ${selectedBooking.refund_date}`} />
+              {/* Financials Tab */}
+              {activeTab === 'financials' && (
+                <div className="space-y-6">
+                  <Section
+                    title="Financials"
+                    action={
+                      selectedBooking?.status !== 'canceled' && (
+                        <button
+                          onClick={startEditingFinancials}
+                          className="text-xs text-blue-600 hover:underline font-bold uppercase"
+                        >
+                          Adjust
+                        </button>
+                      )
+                    }
+                  >
+                    {!isEditingFinancials ? (
+                      <>
+                        <Row label="Total" value={formatCurrency(selectedBooking.total_price_cents)} />
+                        <Row label="Paid" value={formatCurrency(selectedBooking.amount_paid_cents)} />
+                        <Row label="Deposit" value={formatCurrency(selectedBooking.deposit_amount_cents)} />
+                        <Row label="Balance Due" value={formatCurrency((selectedBooking.total_price_cents || 0) - (selectedBooking.amount_paid_cents || 0))} />
+                        {selectedBooking.refund_amount_cents && (
+                          <Row label="Refunded" value={`${formatCurrency(selectedBooking.refund_amount_cents)} via ${selectedBooking.refund_method} on ${selectedBooking.refund_date}`} />
+                        )}
+                        {selectedBooking.refund_notes && (
+                          <Row label="Refund Notes" value={selectedBooking.refund_notes} />
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <EditRow label="Total Price ($)" value={(financialForm.total_price_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, total_price_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
+                        <EditRow label="Amount Paid ($)" value={(financialForm.amount_paid_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, amount_paid_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
+                        <EditRow label="Deposit ($)" value={(financialForm.deposit_amount_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, deposit_amount_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setIsEditingFinancials(false)}>Cancel</Button>
+                          <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveFinancials}>Save</Button>
+                        </div>
+                      </>
                     )}
-                    {selectedBooking.refund_notes && (
-                      <Row label="Refund Notes" value={selectedBooking.refund_notes} />
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <EditRow label="Total Price ($)" value={(financialForm.total_price_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, total_price_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
-                    <EditRow label="Amount Paid ($)" value={(financialForm.amount_paid_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, amount_paid_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
-                    <EditRow label="Deposit ($)" value={(financialForm.deposit_amount_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, deposit_amount_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setIsEditingFinancials(false)}>Cancel</Button>
-                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveFinancials}>Save</Button>
-                    </div>
-                  </>
-                )}
-              </Section>
-
-              {(selectedBooking.arrival_airline || selectedBooking.departure_airline) && (
-                <Section title="Travel">
-                  {selectedBooking.arrival_airline && (
-                    <Row label="Arrival" value={`${selectedBooking.arrival_airline} — ${selectedBooking.arrival_date} ${selectedBooking.arrival_time}`} />
-                  )}
-                  {selectedBooking.departure_airline && (
-                    <Row label="Departure" value={`${selectedBooking.departure_airline} — ${selectedBooking.departure_date} ${selectedBooking.departure_time}`} />
-                  )}
-                </Section>
+                  </Section>
+                </div>
               )}
 
-              {selectedBooking.notes && (
-                <Section title="Notes">
-                  <p className="text-sm text-gray-700">{selectedBooking.notes}</p>
-                </Section>
+              {/* Payment Schedule Tab */}
+              {activeTab === 'payment' && (
+                <div className="space-y-6">
+                  <Section title="Payment Option">
+                    <Row label="Type" value={selectedBooking.payment_option === 'full' ? 'Full Payment' : 'Installment Plan'} />
+                    <Row label="Status" value={getStatusBadge(selectedBooking.status)} />
+                  </Section>
+
+                  {selectedBooking.payment_option === 'plan' ? (
+                    <>
+                      <Section title="Plan Status">
+                        <Row label="Installments Total" value={selectedBooking.plan_installments_total} />
+                        <Row label="Installments Remaining" value={selectedBooking.plan_installments_remaining} />
+                        <Row label="Next Charge Date" value={selectedBooking.plan_next_charge_date} />
+                        <Row label="Cutoff Applied" value={selectedBooking.plan_cutoff_applied ? 'Yes' : 'No'} />
+                        {selectedBooking.plan_next_charge_date && new Date(selectedBooking.plan_next_charge_date) < new Date() && (
+                          <div className="flex items-center gap-2 text-orange-600 text-xs mt-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Next charge date is in the past
+                          </div>
+                        )}
+                      </Section>
+
+                      {isEditingPaymentSchedule ? (
+                        <Section title="Edit Schedule">
+                          <EditRow label="Next Charge Date" value={paymentScheduleForm.plan_next_charge_date} onChange={(v) => setPaymentScheduleForm(f => ({ ...f, plan_next_charge_date: v }))} type="date" />
+                          <EditRow label="Installments Remaining" value={String(paymentScheduleForm.plan_installments_remaining)} onChange={(v) => setPaymentScheduleForm(f => ({ ...f, plan_installments_remaining: parseInt(v) || 0 }))} type="number" />
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs text-gray-500 uppercase font-bold">Installment Dates</label>
+                              <button
+                                onClick={() => setPaymentScheduleForm(f => ({ ...f, plan_anchor_dates: [...(f.plan_anchor_dates || []), ''] }))}
+                                className="text-xs text-blue-600 hover:underline font-bold flex items-center gap-1"
+                              >
+                                <Plus className="w-3 h-3" /> Add Date
+                              </button>
+                            </div>
+                            {(paymentScheduleForm.plan_anchor_dates || []).map((date, i) => (
+                              <div key={i} className="flex gap-2 mb-2">
+                                <Input
+                                  type="date"
+                                  value={date}
+                                  onChange={(e) => {
+                                    const updated = [...paymentScheduleForm.plan_anchor_dates];
+                                    updated[i] = e.target.value;
+                                    setPaymentScheduleForm(f => ({ ...f, plan_anchor_dates: updated }));
+                                  }}
+                                  className="flex-1"
+                                />
+                                <Button size="sm" variant="outline" onClick={() => setPaymentScheduleForm(f => ({ ...f, plan_anchor_dates: f.plan_anchor_dates.filter((_, idx) => idx !== i) }))}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button size="sm" variant="outline" className="flex-1" onClick={() => setIsEditingPaymentSchedule(false)}>Cancel</Button>
+                            <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSavePaymentSchedule}>Save</Button>
+                          </div>
+                        </Section>
+                      ) : (
+                        <Section
+                          title="Installment Dates"
+                          action={
+                            selectedBooking?.status !== 'canceled' && (
+                              <button onClick={startEditingPaymentSchedule} className="text-xs text-blue-600 hover:underline font-bold uppercase">
+                                Edit Schedule
+                              </button>
+                            )
+                          }
+                        >
+                          {(selectedBooking.plan_anchor_dates || []).length === 0 ? (
+                            <p className="text-sm text-gray-400">No installment dates set</p>
+                          ) : (
+                            selectedBooking.plan_anchor_dates.map((date, i) => (
+                              <Row key={i} label={`Installment ${i + 1}`} value={date} />
+                            ))
+                          )}
+                        </Section>
+                      )}
+
+                      <Section title="Record Manual Payment">
+                        <p className="text-xs text-gray-400 mb-2">Use this if a guest paid outside of Stripe (cash, Zelle, etc.)</p>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            placeholder="Amount ($)"
+                            value={manualPaymentAmount}
+                            onChange={(e) => setManualPaymentAmount(e.target.value)}
+                          />
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
+                            onClick={handleManualPayment}
+                            disabled={!manualPaymentAmount}
+                          >
+                            Record Payment
+                          </Button>
+                        </div>
+                      </Section>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-400">No installment schedule — this booking uses full payment.</p>
+                  )}
+                </div>
               )}
             </div>
           )}
