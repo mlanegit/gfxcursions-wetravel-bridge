@@ -1,0 +1,44 @@
+{
+  "name": "EmailTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name/identifier"
+    },
+    "trigger": {
+      "type": "string",
+      "enum": [
+        "booking_confirmed",
+        "payment_received",
+        "payment_failed",
+        "payment_reminder_7d",
+        "balance_reminder_30d",
+        "trip_paid_in_full",
+        "payment_reminder",
+        "arrival_reminder",
+        "booking_cancelled"
+      ],
+      "description": "When this email is sent"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Email subject line"
+    },
+    "body": {
+      "type": "string",
+      "description": "Email body content (HTML)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this template is active"
+    }
+  },
+  "required": [
+    "name",
+    "trigger",
+    "subject",
+    "body"
+  ]
+}
