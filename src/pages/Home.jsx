@@ -29,8 +29,7 @@ export default function Home() {
   ];
 
   const handleAdminClick = () => {
-    // Redirect to Base44 login, then come back to AdminDashboard
-    base44.auth.redirectToLogin(createPageUrl('AdminDashboard'));
+    base44.auth.redirectToLogin(window.location.origin + createPageUrl('AdminDashboard'));
   };
 
   return (
