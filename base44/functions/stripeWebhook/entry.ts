@@ -46,6 +46,16 @@ Deno.serve(async (req) => {
             stripe_payment_intent_id: session.payment_intent,
           });
           console.log(`Booking ${bookingId} marked as paid (full).`);
+          
+          // Send branded confirmation email
+          try {
+            await base44.asServiceRole.functions.invoke('sendEmail', {
+              trigger: 'booking_confirmed',
+              bookingId,
+            });
+          } catch (emailErr) {
+            console.error(`Failed to send confirmation email for booking ${bookingId}:`, emailErr.message);
+          }
 
         } else if (paymentOption === 'plan') {
           // Load trip to get plan_dates
@@ -69,6 +79,16 @@ Deno.serve(async (req) => {
             plan_installments_total: planDates.length,
           });
           console.log(`Booking ${bookingId} activated on plan. Next charge: ${nextChargeDate}`);
+          
+          // Send branded confirmation email
+          try {
+            await base44.asServiceRole.functions.invoke('sendEmail', {
+              trigger: 'booking_confirmed',
+              bookingId,
+            });
+          } catch (emailErr) {
+            console.error(`Failed to send confirmation email for booking ${bookingId}:`, emailErr.message);
+          }
         }
         break;
       }
