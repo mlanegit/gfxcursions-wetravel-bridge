@@ -27,10 +27,10 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: `no trigger for ${newStatus}` });
     }
 
-    // Call sendBookingEmail function
-    const result = await base44.asServiceRole.functions.invoke('sendBookingEmail', {
-      bookingId,
+    // Call sendEmail function with trigger and bookingId
+    const result = await base44.asServiceRole.functions.invoke('sendEmail', {
       trigger,
+      bookingId,
     });
 
     console.log(`Email dispatched for booking ${bookingId}, status: ${newStatus}`);
