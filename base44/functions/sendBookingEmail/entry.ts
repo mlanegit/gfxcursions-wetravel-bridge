@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
-const FUNCTIONS_BASE = 'https://697e8285d68c1a64ca6d3df7.base44.app/functions';
+// NOTE: Email triggers are now handled by the Stripe webhook (stripeWebhook function)
+// This function is kept as a passthrough for backward compatibility
+// The webhook is the single source of truth for booking confirmation emails
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -9,28 +11,22 @@ Deno.serve(async (req) => {
 
   try {
     const base44 = createClientFromRequest(req);
-    const { bookingId, trigger } = await req.json();
+    const { bookingId } = await req.json();
 
     if (!bookingId) {
       return Response.json({ error: 'Missing bookingId' }, { status: 400 });
     }
 
-    const authHeader = req.headers.get('Authorization') || '';
-
-    const response = await fetch(`${FUNCTIONS_BASE}/sendEmail`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
-      body: JSON.stringify({
-        trigger: trigger || 'booking_confirmed',
-        bookingId,
-      }),
+    // Email flow now handled by Stripe webhook
+    // checkout.session.completed → booking_confirmed email
+    // payment_intent.succeeded → payment_received email
+    // payment_intent.payment_failed → payment_failed email
+    
+    return Response.json({ 
+      success: true, 
+      message: 'Email triggers are now handled by Stripe webhook',
+      bookingId 
     });
-
-    const data = await response.json();
-    return Response.json(data);
 
   } catch (error) {
     console.error('sendBookingEmail error:', error.message);
