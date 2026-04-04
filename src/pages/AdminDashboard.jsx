@@ -7,6 +7,7 @@ import BookingManager from '../components/admin/BookingManager';
 import PaymentManager from '../components/admin/PaymentManager';
 import Reports from '../components/admin/Reports';
 import Settings from '../components/admin/Settings';
+import EmailTemplateManager from '../components/admin/EmailTemplateManager';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -52,16 +53,21 @@ if (!user || user.role !== "admin") {
         <button onClick={() => setActiveTab("settings")} className="block w-full text-left hover:text-green-400">
           Settings
         </button>
+
+        <button onClick={() => setActiveTab("email-templates")} className="block w-full text-left hover:text-green-400">
+          Email Templates
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 p-8">
         {activeTab === "dashboard" && <AdminOverview />}
-        {activeTab === "trips" && <TripManager />}
-        {activeTab === "bookings" && <BookingManager />}
-        {activeTab === "payments" && <PaymentManager />}
-        {activeTab === "reports" && <Reports />}
-        {activeTab === "settings" && <Settings />}
+         {activeTab === "trips" && <TripManager />}
+         {activeTab === "bookings" && <BookingManager />}
+         {activeTab === "payments" && <PaymentManager />}
+         {activeTab === "reports" && <Reports />}
+         {activeTab === "settings" && <Settings />}
+         {activeTab === "email-templates" && <EmailTemplateManager />}
       </div>
 
     </div>
