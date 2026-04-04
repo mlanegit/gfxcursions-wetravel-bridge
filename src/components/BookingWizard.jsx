@@ -55,17 +55,21 @@ export default function BookingWizard({ onClose, tripSlug }) {
     return form.occupancy === 'double' ? pp * 2 : pp;
   };
 
-  const depositAmount = () => {
-    if (!trip) return 0;
-    const depositPP = trip.deposit_per_person || 500;
-    return form.occupancy === 'double' ? depositPP * 2 : depositPP;
-  };
+ const depositAmount = () => {
+  if (!trip) return 0;
+  const depositPP = trip.deposit_per_person || 500;
+  return form.occupancy === 'double' ? depositPP * 2 : depositPP;
+};
 
   const isPaymentPlanAvailable = () => {
-    if (!trip) return false;
-    if (trip.balance_due_date) return new Date(trip.balance_due_date) > new Date();
-    return true;
-  };
+  if (!trip) return false;
+  // Support both old schema (payment_plan_enabled + plan_cutoff_date) 
+  // and new schema (balance_due_date)
+  if (trip.payment_plan_enabled === false) return false;
+  const cutoff = trip.plan_cutoff_date || trip.balance_due_date;
+  if (cutoff) return new Date(cutoff) > new Date();
+  return true;
+};
 
   const packageName = () => PACKAGES.find((p) => p.id === form.packageType)?.name || '';
 
