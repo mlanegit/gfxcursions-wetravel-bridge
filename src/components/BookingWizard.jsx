@@ -41,8 +41,13 @@ export default function BookingWizard({ onClose, tripSlug }) {
 
   useEffect(() => {
     const slug = tripSlug || 'lost-in-jamaica';
-    base44.entities.Trip.filter({ slug })
-      .then((trips) => trips.length > 0 && setTrip(trips[0]))
+    base44.entities.Trip.filter({ slug, active: true })
+      .then((trips) => {
+        if (trips.length > 0) {
+          const sorted = trips.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+          setTrip(sorted[0]);
+        }
+      })
       .catch((err) => console.error('Failed to load trip:', err));
   }, [tripSlug]);
 
@@ -506,7 +511,7 @@ export default function BookingWizard({ onClose, tripSlug }) {
                           {form.paymentOption === 'plan' && (
                             <div className="mt-3 pt-3 border-t border-zinc-700 space-y-1 text-xs text-zinc-400">
                               <p className="flex items-start gap-1"><Info className="w-3 h-3 mt-0.5 flex-shrink-0 text-red-500" /> Remaining <strong className="text-white">${(totalPrice() - depositAmount()).toLocaleString()}</strong> charged automatically on scheduled dates.</p>
-                              <p className="flex items-start gap-1"><Info className="w-3 h-3 mt-0.5 flex-shrink-0 text-red-500" /> All balances due by <strong className="text-white">{trip?.balance_due_date}</strong>.</p>
+                              <p className="flex items-start gap-1"><Info className="w-3 h-3 mt-0.5 flex-shrink-0 text-red-500" /> All balances due by <strong className="text-white">{trip?.plan_cutoff_date}</strong>.</p>
                               <p className="flex items-start gap-1"><AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0 text-yellow-500" /> Failed payments incur a <strong className="text-yellow-400">$30 retry fee</strong>.</p>
                             </div>
                           )}
