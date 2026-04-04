@@ -1,183 +1,97 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 import Stripe from 'npm:stripe@17';
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
-const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '');
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
+const FUNCTIONS_BASE = 'https://api.base44.app/api/apps/697e8285d68c1a64ca6d3df7/functions';
+
+async function callSendEmail(trigger: string, bookingId: string, authHeader: string) {
+  try {
+    await fetch(`${FUNCTIONS_BASE}/sendEmail`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+      body: JSON.stringify({ trigger, bookingId }),
+    });
+  } catch (e) { console.error(`Failed to send ${trigger} email:`, e.message); }
+}
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') {
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-  }
-
+  if (req.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405 });
   const body = await req.text();
-  const sig = req.headers.get('stripe-signature');
-
-  let event;
+  const sig = req.headers.get('stripe-signature') || '';
+  const authHeader = req.headers.get('Authorization') || '';
+  let event: Stripe.Event;
   try {
     event = await stripe.webhooks.constructEventAsync(body, sig, webhookSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return Response.json({ error: 'Invalid signature' }, { status: 400 });
+    return Response.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
-
   const base44 = createClientFromRequest(req);
-
   try {
-    switch (event.type) {
-
-      // ── Checkout completed ──────────────────────────────────────────────────
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        const bookingId = session.metadata?.booking_id;
-        if (!bookingId) break;
-
-        const booking = await base44.asServiceRole.entities.Booking.get(bookingId);
-        if (!booking) break;
-
-        const paymentOption = session.metadata?.payment_option || booking.payment_option;
-        const customerId = session.customer;
-
-        if (paymentOption === 'full') {
-          await base44.asServiceRole.entities.Booking.update(bookingId, {
-            status: 'paid',
-            amount_paid_cents: booking.total_price_cents,
-            stripe_customer_id: customerId,
-            stripe_checkout_session_id: session.id,
-            stripe_payment_intent_id: session.payment_intent,
-          });
-          console.log(`Booking ${bookingId} marked as paid (full).`);
-          
-          // Send branded confirmation email
-          try {
-            await base44.asServiceRole.functions.invoke('sendEmail', {
-              trigger: 'booking_confirmed',
-              bookingId,
-            });
-          } catch (emailErr) {
-            console.error(`Failed to send confirmation email for booking ${bookingId}:`, emailErr.message);
-          }
-
-        } else if (paymentOption === 'plan') {
-          // Load trip to get plan_dates
-          const trips = await base44.asServiceRole.entities.Trip.filter({ id: booking.trip_id });
-          const trip = trips[0] || null;
-
-          const planDates = (trip?.plan_dates || []).filter(d => d).sort();
-          const today = new Date().toISOString().split('T')[0];
-          const upcomingDates = planDates.filter(d => d >= today);
-          const nextChargeDate = upcomingDates[0] || null;
-          const installmentsRemaining = upcomingDates.length;
-
-          await base44.asServiceRole.entities.Booking.update(bookingId, {
-            status: 'active_plan',
-            amount_paid_cents: booking.deposit_amount_cents || 0,
-            stripe_customer_id: customerId,
-            stripe_checkout_session_id: session.id,
-            plan_anchor_dates: planDates,
-            plan_next_charge_date: nextChargeDate,
-            plan_installments_remaining: installmentsRemaining,
-            plan_installments_total: planDates.length,
-          });
-          console.log(`Booking ${bookingId} activated on plan. Next charge: ${nextChargeDate}`);
-          
-          // Send branded confirmation email
-          try {
-            await base44.asServiceRole.functions.invoke('sendEmail', {
-              trigger: 'booking_confirmed',
-              bookingId,
-            });
-          } catch (emailErr) {
-            console.error(`Failed to send confirmation email for booking ${bookingId}:`, emailErr.message);
-          }
-        }
-        break;
-      }
-
-      // ── Checkout expired ────────────────────────────────────────────────────
-      case 'checkout.session.expired': {
-        const session = event.data.object;
-        const bookingId = session.metadata?.booking_id;
-        if (!bookingId) break;
-
-        await base44.asServiceRole.entities.Booking.update(bookingId, {
-          status: 'initiated',
-        });
-        console.log(`Booking ${bookingId} reset to initiated (session expired).`);
-        break;
-      }
-
-      // ── Payment intent succeeded (future installments) ──────────────────────
-      case 'payment_intent.succeeded': {
-        const pi = event.data.object;
-        const customerId = pi.customer;
-        if (!customerId) break;
-
-        // Find active_plan booking by customer ID
-        const bookings = await base44.asServiceRole.entities.Booking.filter({
-          stripe_customer_id: customerId,
-          status: 'active_plan',
-        });
-        if (!bookings.length) break;
-
-        const booking = bookings[0];
-
-        // Only handle if this is NOT the initial deposit (already handled by checkout.session.completed)
-        // Heuristic: if checkout_session_id matches, skip (initial deposit)
-        if (pi.metadata?.checkout_session) break;
-
-        const amountCents = pi.amount_received || pi.amount || 0;
-        const newPaid = (booking.amount_paid_cents || 0) + amountCents;
-        const remaining = Math.max((booking.plan_installments_remaining || 1) - 1, 0);
-
-        // Advance the anchor dates — remove the first upcoming date
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const bookingId = session.metadata?.booking_id;
+      const paymentOption = session.metadata?.payment_option;
+      if (!bookingId) return Response.json({ received: true });
+      const booking = await base44.asServiceRole.entities.Booking.get(bookingId);
+      if (!booking) return Response.json({ received: true });
+      const trip = await base44.asServiceRole.entities.Trip.get(booking.trip_id);
+      const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : (session.payment_intent as any)?.id || '';
+      const stripeCustomerId = typeof session.customer === 'string' ? session.customer : booking.stripe_customer_id || '';
+      if (paymentOption === 'full') {
+        await base44.asServiceRole.entities.Booking.update(bookingId, { status: 'paid', amount_paid_cents: booking.total_price_cents, stripe_payment_intent_id: paymentIntentId, stripe_customer_id: stripeCustomerId, confirmation_email_sent: true });
+      } else if (paymentOption === 'plan') {
+        const depositCents = booking.deposit_amount_cents || 0;
+        const planDates: string[] = (trip?.payment_dates || []).sort();
         const today = new Date().toISOString().split('T')[0];
-        const planDates = (booking.plan_anchor_dates || []).sort();
         const futureDates = planDates.filter(d => d > today);
-        const nextChargeDate = futureDates[0] || null;
-
-        const updates = {
-          amount_paid_cents: newPaid,
-          plan_installments_remaining: remaining,
-          plan_next_charge_date: nextChargeDate,
-        };
-
-        if (remaining === 0) {
-          updates.status = 'paid';
+        let paymentMethodId: string | null = null;
+        if (paymentIntentId) {
+          try {
+            const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+            if (pi.payment_method) {
+              paymentMethodId = typeof pi.payment_method === 'string' ? pi.payment_method : (pi.payment_method as any).id;
+              if (stripeCustomerId && paymentMethodId) {
+                try { await stripe.paymentMethods.attach(paymentMethodId, { customer: stripeCustomerId }); } catch (_) {}
+              }
+            }
+          } catch (e) { console.error('Failed to retrieve payment intent:', e.message); }
         }
-
-        await base44.asServiceRole.entities.Booking.update(booking.id, updates);
-        console.log(`Installment recorded for booking ${booking.id}. Remaining: ${remaining}`);
-        break;
+        await base44.asServiceRole.entities.Booking.update(bookingId, { status: 'active_plan', amount_paid_cents: depositCents, stripe_payment_intent_id: paymentIntentId, stripe_customer_id: stripeCustomerId, stripe_payment_method_id: paymentMethodId || undefined, due_date: trip?.balance_due_date || null, confirmation_email_sent: true });
       }
-
-      // ── Payment intent failed ───────────────────────────────────────────────
-      case 'payment_intent.payment_failed': {
-        const pi = event.data.object;
-        const customerId = pi.customer;
-        if (!customerId) break;
-
-        const bookings = await base44.asServiceRole.entities.Booking.filter({
-          stripe_customer_id: customerId,
-          status: 'active_plan',
-        });
-        if (!bookings.length) break;
-
-        const booking = bookings[0];
-        await base44.asServiceRole.entities.Booking.update(booking.id, {
-          status: 'past_due',
-        });
-        console.log(`Booking ${booking.id} set to past_due (payment failed).`);
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+      await callSendEmail('booking_confirmed', bookingId, authHeader);
     }
-
+    if (event.type === 'checkout.session.expired') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const bookingId = session.metadata?.booking_id;
+      if (bookingId) await base44.asServiceRole.entities.Booking.update(bookingId, { status: 'pending', stripe_checkout_session_id: null });
+    }
+    if (event.type === 'payment_intent.payment_failed') {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const bookingId = pi.metadata?.booking_id;
+      if (bookingId) {
+        const booking = await base44.asServiceRole.entities.Booking.get(bookingId);
+        if (booking && booking.status === 'active_plan') {
+          await base44.asServiceRole.entities.Booking.update(bookingId, { status: 'past_due' });
+          await callSendEmail('payment_failed', bookingId, authHeader);
+        }
+      }
+    }
+    if (event.type === 'payment_intent.succeeded') {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const bookingId = pi.metadata?.booking_id;
+      if (bookingId && pi.metadata?.installment_type === 'installment') {
+        const booking = await base44.asServiceRole.entities.Booking.get(bookingId);
+        if (booking) {
+          const newPaid = (booking.amount_paid_cents || 0) + pi.amount;
+          const isFullyPaid = newPaid >= (booking.total_price_cents || 0);
+          await base44.asServiceRole.entities.Booking.update(bookingId, { amount_paid_cents: newPaid, status: isFullyPaid ? 'paid' : 'active_plan' });
+          await callSendEmail('payment_received', bookingId, authHeader);
+        }
+      }
+    }
     return Response.json({ received: true });
-
-  } catch (err) {
-    console.error('Webhook handler error:', err.message);
-    return Response.json({ error: err.message }, { status: 500 });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
   }
 });

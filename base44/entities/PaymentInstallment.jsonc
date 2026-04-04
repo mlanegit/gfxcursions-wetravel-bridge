@@ -1,0 +1,64 @@
+{
+  "name": "PaymentInstallment",
+  "type": "object",
+  "properties": {
+    "booking_id": {
+      "type": "string",
+      "description": "Reference to Booking ID"
+    },
+    "amount_cents": {
+      "type": "integer",
+      "description": "Installment amount in cents"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "When this installment is due"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "paid",
+        "failed",
+        "retrying",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "description": "Payment status"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string",
+      "description": "Stripe payment intent ID for this installment"
+    },
+    "retry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date to retry failed payment"
+    },
+    "attempt_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of payment attempts"
+    },
+    "is_deposit": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the deposit payment"
+    },
+    "is_late_enrollment_adjustment": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this covers late enrollment fees"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Admin notes about this installment"
+    }
+  },
+  "required": [
+    "booking_id",
+    "amount_cents",
+    "due_date"
+  ]
+}
