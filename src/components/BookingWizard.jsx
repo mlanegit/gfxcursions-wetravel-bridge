@@ -40,11 +40,12 @@ export default function BookingWizard({ onClose, tripSlug }) {
   });
 
   useEffect(() => {
-    if (!tripSlug) return;
-    base44.entities.Trip.filter({ slug: tripSlug })
+    const slug = tripSlug || 'lost-in-jamaica';
+    base44.entities.Trip.filter({ slug })
       .then((trips) => trips.length > 0 && setTrip(trips[0]))
       .catch((err) => console.error('Failed to load trip:', err));
   }, [tripSlug]);
+
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 

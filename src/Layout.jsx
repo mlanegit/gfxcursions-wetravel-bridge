@@ -101,7 +101,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Booking Wizard Modal */}
       {showBookingWizard && (
-        <BookingWizard onClose={() => setShowBookingWizard(false)} />
+        <BookingWizard tripSlug="lost-in-jamaica" onClose={() => setShowBookingWizard(false)} />
       )}
       </div>
       );
