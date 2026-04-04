@@ -5,14 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Calendar, Music, Waves, Gift, Bus, Star } from 'lucide-react';
 import BookingWizard from '../components/BookingWizard';
+import { base44 } from '@/api/base44Client';
 
 export default function Home() {
   const [showBookingWizard, setShowBookingWizard] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
-  const [adminLoading, setAdminLoading] = useState(false);
-  const [adminError, setAdminError] = useState('');
 
   const highlights = [
     { icon: Calendar, text: '5 Days / 4 Nights' },
@@ -32,23 +28,9 @@ export default function Home() {
     'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=400&h=300&fit=crop',
   ];
 
-  const handleAdminLogin = async () => {
-    if (!adminEmail || !adminPassword) {
-      setAdminError('Please enter your email and password.');
-      return;
-    }
-    setAdminLoading(true);
-    setAdminError('');
-    try {
-      const { base44 } = await import('@/api/base44Client');
-      await base44.auth.login(adminEmail, adminPassword);
-      window.location.href = createPageUrl('AdminDashboard');
-    } catch (err) {
-      console.error(err);
-      setAdminError('Invalid email or password. Please try again.');
-    } finally {
-      setAdminLoading(false);
-    }
+  const handleAdminClick = () => {
+    // Redirect to Base44 login, then come back to AdminDashboard
+    base44.auth.redirectToLogin(createPageUrl('AdminDashboard'));
   };
 
   return (
@@ -78,10 +60,10 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative">
 
-        {/* Admin Button — always visible */}
+        {/* Admin Button */}
         <div className="absolute top-6 right-6 z-20">
           <Button
-            onClick={() => { setShowAdminLogin(true); setAdminError(''); }}
+            onClick={handleAdminClick}
             className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase"
           >
             Admin
@@ -273,55 +255,6 @@ export default function Home() {
           tripSlug="lost-in-jamaica"
           onClose={() => setShowBookingWizard(false)}
         />
-      )}
-
-      {/* Admin Login Modal */}
-      {showAdminLogin && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-8 w-full max-w-sm shadow-2xl">
-            <h2 className="text-white font-black text-xl uppercase mb-1">Admin Access</h2>
-            <p className="text-zinc-400 text-sm mb-6">Sign in to manage your trips and bookings.</p>
-            {adminError && <p className="text-red-400 text-sm mb-4">{adminError}</p>}
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Email</label>
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:border-red-600"
-                  placeholder="you@[example.com](https://example.com)"
-                />
-              </div>
-              <div>
-                <label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Password</label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
-                  className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:border-red-600"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => { setShowAdminLogin(false); setAdminError(''); }}
-                  className="flex-1 border border-zinc-700 text-zinc-300 hover:text-white rounded-md py-2 text-sm font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAdminLogin}
-                  disabled={adminLoading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-md py-2 text-sm font-black uppercase"
-                >
-                  {adminLoading ? 'Signing in...' : 'Sign In'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
     </div>
