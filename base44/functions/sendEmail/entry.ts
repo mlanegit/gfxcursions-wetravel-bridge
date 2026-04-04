@@ -37,25 +37,37 @@ Deno.serve(async (req) => {
       return Response.json({ error: `Template for trigger ${trigger} is inactive` }, { status: 400 });
     }
 
-    // Substitute placeholders with booking/trip data
+    // Build substitution map from booking and trip data
     const substitutions = {
-      '{{guest_name}}': `${booking.first_name} ${booking.last_name}`,
-      '{{trip_name}}': trip.name,
-      '{{trip_location}}': trip.location,
-      '{{start_date}}': trip.start_date,
-      '{{end_date}}': trip.end_date,
-      '{{total_price}}': `$${(booking.total_price_cents / 100).toFixed(2)}`,
-      '{{deposit_amount}}': `$${(booking.deposit_amount_cents / 100).toFixed(2)}`,
-      '{{guests}}': booking.guests.toString(),
-      '{{booking_id}}': booking.id,
+      'guest_name': `${booking.first_name} ${booking.last_name}`,
+      'first_name': booking.first_name,
+      'last_name': booking.last_name,
+      'trip_name': trip.name,
+      'trip_location': trip.location,
+      'start_date': trip.start_date,
+      'end_date': trip.end_date,
+      'total_price': `$${(booking.total_price_cents / 100).toFixed(2)}`,
+      'total_price_usd': (booking.total_price_cents / 100).toFixed(2),
+      'deposit_amount': `$${(booking.deposit_amount_cents / 100).toFixed(2)}`,
+      'guests': booking.guests.toString(),
+      'booking_id': booking.id,
+      'package_id': booking.package_id,
+      'payment_option': booking.payment_option,
+      'payment_option_display': booking.payment_option === 'full' ? 'Full Payment' : 'Payment Plan',
+      'payment_details': booking.payment_option === 'plan' 
+        ? `Deposit: $${(booking.deposit_amount_cents / 100).toFixed(2)} due now, then ${booking.plan_installments_total || '3'} monthly installments`
+        : `Full payment of $${(booking.total_price_cents / 100).toFixed(2)} due now`,
     };
 
     let subject = template.subject;
     let body = template.body;
 
-    Object.entries(substitutions).forEach(([placeholder, value]) => {
-      subject = subject.replace(new RegExp(placeholder, 'g'), value);
-      body = body.replace(new RegExp(placeholder, 'g'), value);
+    // Replace both {{placeholder}} and {placeholder} formats
+    Object.entries(substitutions).forEach(([key, value]) => {
+      subject = subject.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
+      subject = subject.replace(new RegExp(`{${key}}`, 'g'), value || '');
+      body = body.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
+      body = body.replace(new RegExp(`{${key}}`, 'g'), value || '');
     });
 
     // Send email via Resend API
