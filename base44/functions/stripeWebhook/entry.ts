@@ -60,6 +60,14 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Booking.update(bookingId, { status: 'active_plan', amount_paid_cents: depositCents, stripe_payment_intent_id: paymentIntentId, stripe_customer_id: stripeCustomerId, stripe_payment_method_id: paymentMethodId || undefined, due_date: trip?.balance_due_date || null, confirmation_email_sent: true });
       }
       await callSendEmail('booking_confirmed', bookingId, authHeader);
+      await fetch(`${FUNCTIONS_BASE}/notifyAdmin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({
+          subject: `🎉 New Booking – ${booking.first_name} ${booking.last_name}`,
+          message: `New booking received!\n\nName: ${booking.first_name} ${booking.last_name}\nEmail: ${booking.email}\nPackage: ${booking.package_id}\nPayment: ${booking.payment_option}\nTotal: $${(booking.total_price_cents / 100).toFixed(2)}`
+        }),
+      });
     }
     if (event.type === 'checkout.session.expired') {
       const session = event.data.object as Stripe.Checkout.Session;
