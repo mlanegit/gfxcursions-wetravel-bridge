@@ -4,1048 +4,545 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, ChevronRight, ChevronLeft, Users, Calendar, DollarSign, Loader2, Phone } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, Users, Calendar, DollarSign, Loader2, Phone, AlertCircle, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
-export default function BookingWizard({ onClose, tripSlug }) {
-  console.log("BookingWizard tripSlug:", tripSlug);
+const PACKAGES = [
+  { id: 'luxury-suite', name: 'Luxury Suite', description: 'All-inclusive luxury suite with resort amenities.', nights: [3, 4] },
+  { id: 'diamond-club', name: 'Luxury Suite Diamond Club', description: 'Elevated Diamond Club access with premium perks.', nights: [3, 4], featured: true },
+  { id: 'ocean-view-dc', name: 'Luxury Ocean View Diamond Club', description: 'Stunning ocean views with the full Diamond Club experience.', nights: [3, 4], premium: true },
+];
 
+const PRICING = {
+  'luxury-suite-3-single': 1455, 'luxury-suite-3-double': 1100,
+  'luxury-suite-4-single': 1825, 'luxury-suite-4-double': 1350,
+  'diamond-club-3-single': 1650, 'diamond-club-3-double': 1230,
+  'diamond-club-4-single': 2100, 'diamond-club-4-double': 1500,
+  'ocean-view-dc-3-single': 1825, 'ocean-view-dc-3-double': 1350,
+  'ocean-view-dc-4-single': 2350, 'ocean-view-dc-4-double': 1650,
+};
+
+export default function BookingWizard({ onClose, tripSlug }) {
   const [step, setStep] = useState(1);
   const [trip, setTrip] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
-const [bookingData, setBookingData] = useState({
-    packageType: '',
-    nights: '',
-    occupancy: '',
-    guests: 1,
-    paymentOption: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    countryCode: '+1',
-    phone: '',
-    tshirtSize: '',
-    guest2FirstName: '',
-    guest2LastName: '',
-    guest2Email: '',
-    guest2CountryCode: '+1',
-    guest2Phone: '',
-    guest2TshirtSize: '',
-    bedPreference: '',
-    referredBy: '',
-    celebratingBirthday: '',
-    notes: '',
-    arrivalAirline: '',
-    arrivalDate: '',
-    arrivalTime: '',
-    departureAirline: '',
-    departureDate: '',
-    departureTime: '',
+  const [form, setForm] = useState({
+    packageType: '', nights: '', occupancy: '', paymentOption: '',
+    firstName: '', lastName: '', email: '', countryCode: '+1', phone: '', tshirtSize: '',
+    guest2FirstName: '', guest2LastName: '', guest2Email: '', guest2CountryCode: '+1', guest2Phone: '', guest2TshirtSize: '',
+    bedPreference: '', referredBy: '', celebratingBirthday: '', notes: '',
+    arrivalAirline: '', arrivalDate: '', arrivalTime: '',
+    departureAirline: '', departureDate: '', departureTime: '',
   });
 
-  const packages = [
-    { id: 'luxury-suite', name: 'Luxury Suite', nights: [3, 4] },
-    { id: 'diamond-club', name: 'Luxury Suite Diamond Club', nights: [3, 4], featured: true },
-    { id: 'ocean-view-dc', name: 'Luxury Ocean View Diamond Club', nights: [3, 4], premium: true },
-  ];
+  useEffect(() => {
+    if (!tripSlug) return;
+    base44.entities.Trip.filter({ slug: tripSlug })
+      .then((trips) => trips.length > 0 && setTrip(trips[0]))
+      .catch((err) => console.error('Failed to load trip:', err));
+  }, [tripSlug]);
 
-  const pricing = {
-    'luxury-suite-3-single': 1455,
-    'luxury-suite-3-double': 1100,
-    'luxury-suite-4-single': 1825,
-    'luxury-suite-4-double': 1350,
-    'diamond-club-3-single': 1650,
-    'diamond-club-3-double': 1230,
-    'diamond-club-4-single': 2100,
-    'diamond-club-4-double': 1500,
-    'ocean-view-dc-3-single': 1825,
-    'ocean-view-dc-3-double': 1350,
-    'ocean-view-dc-4-single': 2350,
-    'ocean-view-dc-4-double': 1650,
+  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const pricePerPerson = () => PRICING[`${form.packageType}-${form.nights}-${form.occupancy}`] || 0;
+
+  const totalPrice = () => {
+    const pp = pricePerPerson();
+    return form.occupancy === 'double' ? pp * 2 : pp;
   };
 
-  const getPriceKey = () => {
-    return `${bookingData.packageType}-${bookingData.nights}-${bookingData.occupancy}`;
+  const depositAmount = () => {
+    if (!trip) return 0;
+    const depositPP = trip.deposit_per_person || 500;
+    return form.occupancy === 'double' ? depositPP * 2 : depositPP;
   };
-
-  const getPrice = () => {
-    const key = getPriceKey();
-    return pricing[key] || 0;
-  };
-
-  const getTotalPrice = () => {
-    const pricePerPerson = getPrice();
-    if (bookingData.occupancy === 'double') {
-      return pricePerPerson * 2;
-    }
-    return pricePerPerson;
-  };
-
-  const calculateStripeGross = (amount) => {
-    return Math.round(((amount + 0.30) / (1 - 0.029)) * 100) / 100;
-  };
-
-  const getBaseAmountDueToday = () => {
-  if (bookingData.paymentOption === 'plan') {
-    return getDepositAmount();
-  }
-  return getTotalPrice();
-};
-
-  const getGrossAmountDueToday = () => {
-    const base = getBaseAmountDueToday();
-    return calculateStripeGross(base);
-  };
-
-  const getProcessingFee = () => {
-    return Math.round((getGrossAmountDueToday() - getBaseAmountDueToday()) * 100) / 100;
-  };
-
-  const getDepositAmount = () => {
-  if (!trip) return 0;
-
-  const depositPerPerson = trip.deposit_per_person || 250;
-  const guests = Number(bookingData.guests) || 0;
-
-  return depositPerPerson * bookingData.guests;
-};
-useEffect(() => {
-  const loadTrip = async () => {
-    try {
-      const trips = await base44.entities.Trip.filter({ slug: tripSlug });
-
-      if (trips.length > 0) {
-        setTrip(trips[0]);
-      } else {
-        console.warn("No trip found with slug:", tripSlug);
-      }
-    } catch (err) {
-      console.error("Failed to load trip", err);
-    }
-  };
-
-  if (tripSlug) {
-    loadTrip();
-  }
-}, [tripSlug]);
-
-  const handleNext = () => {
-    if (step < 4) setStep(step + 1);
-  };
-
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  const handleBookNow = async () => {
-  if (!trip) {
-  toast.error("Trip data not loaded yet. Please try again.");
-  setIsSubmitting(false);
-  return;
-}
-  console.log("🔥 Confirm Booking clicked");
-  setIsSubmitting(true);
-
-  try {
-    // Backend function handles booking creation + Stripe session in same DB context
-    const response = await base44.functions.invoke('createCheckoutSession', {
-      tripId: trip.id,
-      packageId: bookingData.packageType,
-      guests: bookingData.guests,
-      paymentOption: bookingData.paymentOption,
-      totalPriceCents: Math.round(getTotalPrice() * 100),
-      depositPerPerson: trip.deposit_per_person || 250,
-      firstName: bookingData.firstName,
-      lastName: bookingData.lastName,
-      email: bookingData.email,
-      phone: `${bookingData.countryCode} ${bookingData.phone}`,
-    });
-
-    const data = response.data;
-
-    if (!data.url) {
-      throw new Error("Stripe session URL missing");
-    }
-
-    // Redirect to Stripe
-    window.location.href = data.url;
-
-  } catch (error) {
-    console.error("Stripe error:", error);
-    toast.error("Payment session failed. Please try again.");
-    setIsSubmitting(false);
-  }
-};
-
-  const canProceed = () => {
-   if (step === 1) return bookingData.packageType && bookingData.nights;
-
-   if (step === 2) return bookingData.occupancy;
-
-   if (step === 3) {
-    const guest1Valid =
-      bookingData.firstName &&
-      bookingData.lastName &&
-      bookingData.email &&
-      bookingData.phone;
-
-    if (bookingData.occupancy === 'double') {
-      const guest2Valid =
-        bookingData.guest2FirstName &&
-        bookingData.guest2LastName &&
-        bookingData.guest2Email &&
-        bookingData.guest2Phone;
-      return guest1Valid && guest2Valid;
-    }
-
-    return guest1Valid;
-  }
-  
-  if (step === 4) {
-    // Must select payment option first
-    if (!bookingData.paymentOption) return false;
-
-    // 🚫 Block payment plan Dynamic Setting
-    if (bookingData.paymentOption === "plan") {
-  if (!trip) return false;
-
-  if (!trip.payment_plan_enabled) return false;
-
-  if (trip.plan_cutoff_date) {
-    const today = new Date();
-    const cutoff = new Date(trip.plan_cutoff_date);
-
-    if (today >= cutoff) {
-      return false;
-    }
-  }
-}
-
-    return true;
-  }
-
-  return true;
-};
 
   const isPaymentPlanAvailable = () => {
     if (!trip) return false;
-    if (!trip.payment_plan_enabled) return false;
-    if (trip.plan_cutoff_date) {
-      const today = new Date();
-      const cutoff = new Date(trip.plan_cutoff_date);
-      if (today >= cutoff) return false;
-    }
+    if (trip.balance_due_date) return new Date(trip.balance_due_date) > new Date();
     return true;
   };
 
-  const getPackageName = () => {
-    const pkg = packages.find(p => p.id === bookingData.packageType);
-    return pkg ? pkg.name : '';
+  const packageName = () => PACKAGES.find((p) => p.id === form.packageType)?.name || '';
+
+  const validate = () => {
+    const e = {};
+    if (step === 1) {
+      if (!form.packageType) e.packageType = 'Please select a package.';
+      if (!form.nights) e.nights = 'Please select nights.';
+    }
+    if (step === 2) {
+      if (!form.occupancy) e.occupancy = 'Please select occupancy.';
+    }
+    if (step === 3) {
+      if (!form.firstName) e.firstName = 'Required';
+      if (!form.lastName) e.lastName = 'Required';
+      if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Valid email required';
+      if (!form.phone) e.phone = 'Required';
+      if (!form.tshirtSize) e.tshirtSize = 'Required';
+      if (form.occupancy === 'double') {
+        if (!form.guest2FirstName) e.guest2FirstName = 'Required';
+        if (!form.guest2LastName) e.guest2LastName = 'Required';
+        if (!form.guest2Email || !/\S+@\S+\.\S+/.test(form.guest2Email)) e.guest2Email = 'Valid email required';
+        if (!form.guest2Phone) e.guest2Phone = 'Required';
+        if (!form.guest2TshirtSize) e.guest2TshirtSize = 'Required';
+      }
+    }
+    if (step === 4) {
+      if (!form.paymentOption) e.paymentOption = 'Please select a payment option.';
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
-// 🔍 TEMP DEBUG
-if (step === 4) {
-  console.log("Trip:", trip);
-  console.log("payment_plan_enabled:", trip?.payment_plan_enabled);
-  console.log("plan_cutoff_date:", trip?.plan_cutoff_date);
-  console.log("today:", new Date());
-}
+
+  const handleNext = () => { if (validate()) setStep((s) => Math.min(s + 1, 4)); };
+  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    if (!trip) { toast.error('Trip data not loaded yet. Please try again.'); return; }
+    setIsSubmitting(true);
+    try {
+      const guests = form.occupancy === 'double' ? 2 : 1;
+      const bookingPayload = {
+        trip_id: trip.id,
+        package_id: form.packageType,
+        occupancy: form.occupancy,
+        guests,
+        payment_option: form.paymentOption,
+        total_price_cents: Math.round(totalPrice() * 100),
+        deposit_amount_cents: Math.round(depositAmount() * 100),
+        status: 'pending',
+        payment_status: 'pending',
+        first_name: form.firstName,
+        last_name: form.lastName,
+        email: form.email,
+        phone: `${form.countryCode} ${form.phone}`,
+        tshirt_size: form.tshirtSize,
+        bed_preference: form.bedPreference,
+        referred_by: form.referredBy,
+        celebrating_birthday: form.celebratingBirthday,
+        notes: form.notes,
+        arrival_airline: form.arrivalAirline,
+        arrival_date: form.arrivalDate,
+        arrival_time: form.arrivalTime,
+        departure_airline: form.departureAirline,
+        departure_date: form.departureDate,
+        departure_time: form.departureTime,
+      };
+      if (form.occupancy === 'double') {
+        bookingPayload.guest2_first_name = form.guest2FirstName;
+        bookingPayload.guest2_last_name = form.guest2LastName;
+        bookingPayload.guest2_email = form.guest2Email;
+        bookingPayload.guest2_phone = `${form.guest2CountryCode} ${form.guest2Phone}`;
+        bookingPayload.guest2_tshirt_size = form.guest2TshirtSize;
+      }
+      const booking = await base44.entities.Booking.create(bookingPayload);
+      const response = await base44.functions.invoke('createCheckoutSession', { bookingId: booking.id });
+      const data = response?.data || response;
+      if (!data?.url) throw new Error('Stripe session URL missing');
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Booking error:', err);
+      toast.error('Something went wrong. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const FieldError = ({ field }) => errors[field] ? <p className="text-red-400 text-xs mt-1">{errors[field]}</p> : null;
+
+  const stepLabels = ['Package', 'Occupancy', 'Your Info', 'Confirm'];
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-4xl"
-      >
-        <Card className="bg-zinc-900 border-green-600/30">
-          <CardHeader className="border-b border-zinc-800">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-white text-2xl font-black uppercase">
-                Book Your Retreat
-              </CardTitle>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-white text-2xl font-bold"
-              >
-                ×
-              </button>
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-2xl my-8">
+        <Card className="bg-zinc-900 border-zinc-700 shadow-2xl">
+          <CardHeader className="border-b border-zinc-800 pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <CardTitle className="text-white text-2xl font-black uppercase tracking-wide">Book Your Retreat</CardTitle>
+                {trip && <p className="text-red-500 text-sm font-bold mt-1">{trip.name} • {trip.hotel}</p>}
+              </div>
+              <button onClick={onClose} className="text-gray-500 hover:text-white text-3xl leading-none font-light">×</button>
             </div>
-            
-            {/* Progress Steps */}
-            <div className="flex items-center gap-4 mt-6">
-              {[1, 2, 3, 4].map((num) => (
-                <div key={num} className="flex items-center flex-1">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                    step >= num ? 'bg-green-600 border-green-600 text-white' : 'border-zinc-700 text-gray-500'
-                  } font-bold`}>
-                    {step > num ? <Check className="w-5 h-5" /> : num}
-                  </div>
-                  {num < 4 && (
-                    <div className={`flex-1 h-1 mx-2 ${
-                      step > num ? 'bg-green-600' : 'bg-zinc-700'
-                    }`} />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-2 text-xs font-bold uppercase">
-              <span className={step >= 1 ? 'text-green-500' : 'text-gray-500'}>Package</span>
-              <span className={step >= 2 ? 'text-green-500' : 'text-gray-500'}>Occupancy</span>
-              <span className={step >= 3 ? 'text-green-500' : 'text-gray-500'}>Your Info</span>
-              <span className={step >= 4 ? 'text-green-500' : 'text-gray-500'}>Confirm</span>
+            <div className="flex items-center gap-1">
+              {stepLabels.map((label, i) => {
+                const num = i + 1;
+                const done = step > num;
+                const active = step === num;
+                return (
+                  <React.Fragment key={num}>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 font-black text-sm transition-all ${done ? 'bg-red-600 border-red-600 text-white' : active ? 'border-red-600 text-red-500 bg-zinc-800' : 'border-zinc-700 text-zinc-500 bg-zinc-800'}`}>
+                        {done ? <Check className="w-4 h-4" /> : num}
+                      </div>
+                      <span className={`text-xs mt-1 font-bold uppercase tracking-wide ${active ? 'text-red-500' : done ? 'text-red-700' : 'text-zinc-600'}`}>{label}</span>
+                    </div>
+                    {i < stepLabels.length - 1 && <div className={`flex-1 h-0.5 mb-4 ${step > num ? 'bg-red-600' : 'bg-zinc-700'}`} />}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </CardHeader>
 
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 pb-8 px-6">
             <AnimatePresence mode="wait">
-              {/* Step 1: Select Package */}
+
+              {/* STEP 1 — Package */}
               {step === 1 && (
-                <motion.div
-                  key="step1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <h3 className="text-white font-black text-xl uppercase mb-4">
-                    Choose Your Package
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    {packages.map((pkg) => (
-                      <div
-                        key={pkg.id}
-                        onClick={() => setBookingData({ ...bookingData, packageType: pkg.id, nights: '' })}
-                        className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                          bookingData.packageType === pkg.id
-                            ? 'border-green-600 bg-green-600/10'
-                            : 'border-zinc-700 hover:border-zinc-600'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="text-white font-black text-lg">{pkg.name}</h4>
-                              {pkg.premium && (
-                                <span className="bg-green-600 text-white text-xs font-black px-2 py-1 rounded">
-                                  PREMIUM
-                                </span>
-                              )}
-                              {pkg.featured && (
-                                <span className="bg-yellow-400 text-black text-xs font-black px-2 py-1 rounded">
-                                  POPULAR
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-gray-400 text-sm">
-                              Available: {pkg.nights.join(' or ')} Nights
-                            </p>
+                <motion.div key="s1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
+                  <h3 className="text-white font-black text-lg uppercase mb-2">Choose Your Package</h3>
+                  {PACKAGES.map((pkg) => (
+                    <div key={pkg.id} onClick={() => { set('packageType', pkg.id); set('nights', ''); }}
+                      className={`relative p-5 rounded-xl border-2 cursor-pointer transition-all ${form.packageType === pkg.id ? 'border-red-600 bg-red-600/10' : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-500'}`}>
+                      {pkg.featured && <span className="absolute top-3 right-3 bg-yellow-400 text-black text-xs font-black px-2 py-0.5 rounded uppercase">Most Popular</span>}
+                      {pkg.premium && <span className="absolute top-3 right-3 bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded uppercase">Premium</span>}
+                      <div className="flex items-start gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 mt-0.5 flex-shrink-0 flex items-center justify-center ${form.packageType === pkg.id ? 'border-red-600 bg-red-600' : 'border-zinc-600'}`}>
+                          {form.packageType === pkg.id && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <div>
+                          <p className="text-white font-black">{pkg.name}</p>
+                          <p className="text-zinc-400 text-sm mt-0.5">{pkg.description}</p>
+                        </div>
+                      </div>
+                      {form.packageType === pkg.id && (
+                        <div className="mt-4 pt-4 border-t border-zinc-700">
+                          <p className="text-gray-400 text-sm font-bold uppercase tracking-wide mb-2">Select Nights</p>
+                          <div className="flex gap-3">
+                            {pkg.nights.map((n) => (
+                              <button key={n} onClick={(e) => { e.stopPropagation(); set('nights', String(n)); }}
+                                className={`px-5 py-2 rounded-lg border-2 font-black text-sm transition-all ${form.nights === String(n) ? 'border-red-600 bg-red-600 text-white' : 'border-zinc-600 text-zinc-300 hover:border-zinc-400'}`}>
+                                {n} Nights ({n === 3 ? 'Fri–Mon' : 'Thu–Mon'})
+                              </button>
+                            ))}
                           </div>
-                          <div className={`w-6 h-6 rounded-full border-2 ${
-                            bookingData.packageType === pkg.id
-                              ? 'border-green-600 bg-green-600'
-                              : 'border-zinc-600'
-                          } flex items-center justify-center`}>
-                            {bookingData.packageType === pkg.id && (
-                              <Check className="w-4 h-4 text-white" />
-                            )}
+                          {errors.nights && <p className="text-red-400 text-xs mt-1">{errors.nights}</p>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {errors.packageType && <p className="text-red-400 text-xs">{errors.packageType}</p>}
+                </motion.div>
+              )}
+
+              {/* STEP 2 — Occupancy */}
+              {step === 2 && (
+                <motion.div key="s2" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
+                  <h3 className="text-white font-black text-lg uppercase mb-2">Room Occupancy</h3>
+                  <p className="text-zinc-400 text-sm">Will you be sharing your room or staying solo?</p>
+                  {['single', 'double'].map((occ) => {
+                    const pp = PRICING[`${form.packageType}-${form.nights}-${occ}`] || 0;
+                    const total = occ === 'double' ? pp * 2 : pp;
+                    return (
+                      <div key={occ} onClick={() => set('occupancy', occ)}
+                        className={`p-5 rounded-xl border-2 cursor-pointer transition-all ${form.occupancy === occ ? 'border-red-600 bg-red-600/10' : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-500'}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${form.occupancy === occ ? 'border-red-600 bg-red-600' : 'border-zinc-600'}`}>
+                              {form.occupancy === occ && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <div>
+                              <p className="text-white font-black">{occ === 'single' ? 'Single Occupancy' : 'Double Occupancy'}</p>
+                              <p className="text-zinc-400 text-sm">{occ === 'single' ? 'Room for 1 — you get your own space' : 'Room for 2 — share with a travel partner'}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-red-500 font-black text-lg">${pp.toLocaleString()}<span className="text-xs text-zinc-500">/pp</span></p>
+                            {occ === 'double' && <p className="text-zinc-400 text-xs">${total.toLocaleString()} total</p>}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {bookingData.packageType && (
-                    <div className="mt-6">
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Select Number of Nights
-                      </Label>
-                      <Select
-                        value={bookingData.nights}
-                        onValueChange={(value) => setBookingData({ ...bookingData, nights: value })}
-                      >
-                        <SelectTrigger className="bg-black border-zinc-700 text-white">
-                          <SelectValue placeholder="Choose nights" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {packages.find(p => p.id === bookingData.packageType)?.nights.map((night) => (
-                            <SelectItem key={night} value={String(night)}>
-                              {night} Nights ({night === 3 ? 'Friday-Monday' : 'Thursday-Monday'})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    );
+                  })}
+                  {errors.occupancy && <p className="text-red-400 text-xs">{errors.occupancy}</p>}
+                  {form.occupancy && (
+                    <div className="mt-2 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                      {[['Package', packageName()], ['Nights', form.nights], ['Occupancy', form.occupancy === 'double' ? 'Double' : 'Single']].map(([l, v]) => (
+                        <div key={l} className="flex justify-between text-sm mb-1">
+                          <span className="text-zinc-400">{l}</span>
+                          <span className="text-white font-bold">{v}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-zinc-700 mt-2 pt-2 flex justify-between">
+                        <span className="text-white font-black">Total</span>
+                        <span className="text-red-500 font-black text-lg">${totalPrice().toLocaleString()}</span>
+                      </div>
                     </div>
                   )}
                 </motion.div>
               )}
 
-              {/* Step 2: Guests & Occupancy */}
-              {step === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <h3 className="text-white font-black text-xl uppercase mb-4">
-                    Select Occupancy
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div
-                      onClick={() => setBookingData({ ...bookingData, occupancy: 'single', guests: 1 })}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.occupancy === 'single'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <Users className="w-6 h-6 text-green-500" />
-                            <h4 className="text-white font-black text-lg">Single Occupancy</h4>
-                          </div>
-                          <p className="text-gray-400 text-sm">Perfect for solo travelers</p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            ${pricing[`${bookingData.packageType}-${bookingData.nights}-single`]?.toLocaleString()} per person
-                          </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 ${
-                          bookingData.occupancy === 'single'
-                            ? 'border-green-600 bg-green-600'
-                            : 'border-zinc-600'
-                        } flex items-center justify-center`}>
-                          {bookingData.occupancy === 'single' && (
-                            <Check className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-                      </div>
+              {/* STEP 3 — Guest Info */}
+              {step === 3 && (
+                <motion.div key="s3" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
+                  <h3 className="text-white font-black text-lg uppercase">Your Information</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">First Name <span className="text-red-400">*</span></Label>
+                      <Input value={form.firstName} onChange={(e) => set('firstName', e.target.value)} className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.firstName ? 'border-red-500' : ''}`} placeholder="John" />
+                      <FieldError field="firstName" />
                     </div>
-
-                    <div
-                      onClick={() => setBookingData({ ...bookingData, occupancy: 'double', guests: 2 })}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.occupancy === 'double'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <Users className="w-6 h-6 text-green-500" />
-                            <h4 className="text-white font-black text-lg">Double Occupancy</h4>
-                          </div>
-                          <p className="text-gray-400 text-sm">Share with a friend or partner</p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            ${pricing[`${bookingData.packageType}-${bookingData.nights}-double`]?.toLocaleString()} per person
-                          </p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-full border-2 ${
-                          bookingData.occupancy === 'double'
-                            ? 'border-green-600 bg-green-600'
-                            : 'border-zinc-600'
-                        } flex items-center justify-center`}>
-                          {bookingData.occupancy === 'double' && (
-                            <Check className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-                      </div>
+                    <div>
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Last Name <span className="text-red-400">*</span></Label>
+                      <Input value={form.lastName} onChange={(e) => set('lastName', e.target.value)} className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.lastName ? 'border-red-500' : ''}`} placeholder="Doe" />
+                      <FieldError field="lastName" />
                     </div>
                   </div>
-                </motion.div>
-              )}
-
-              {/* Step 3: Contact & Personal Information */}
-              {step === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6 max-h-[60vh] overflow-y-auto pr-2"
-                >
-                  <h3 className="text-white font-black text-xl uppercase mb-4">
-                    Your Information
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                          First Name *
-                        </Label>
-                        <Input
-                          value={bookingData.firstName}
-                          onChange={(e) => setBookingData({ ...bookingData, firstName: e.target.value })}
-                          className="bg-black border-zinc-700 text-white"
-                          placeholder="John"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                          Last Name *
-                        </Label>
-                        <Input
-                          value={bookingData.lastName}
-                          onChange={(e) => setBookingData({ ...bookingData, lastName: e.target.value })}
-                          className="bg-black border-zinc-700 text-white"
-                          placeholder="Doe"
-                          required
-                        />
-                      </div>
-                    </div>
-
+                  <div>
+                    <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Email <span className="text-red-400">*</span></Label>
+                    <Input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.email ? 'border-red-500' : ''}`} placeholder="you@[example.com](https://example.com)" />
+                    <FieldError field="email" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Email Address *
-                      </Label>
-                      <Input
-                        type="email"
-                        value={bookingData.email}
-                        onChange={(e) => setBookingData({ ...bookingData, email: e.target.value })}
-                        className="bg-black border-zinc-700 text-white"
-                        placeholder="john@example.com"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Phone Number *
-                      </Label>
-                      <div className="flex gap-2">
-                        <Select
-                          value={bookingData.countryCode}
-                          onValueChange={(value) => setBookingData({ ...bookingData, countryCode: value })}
-                        >
-                          <SelectTrigger className="bg-black border-zinc-700 text-white w-24">
-                            <SelectValue />
-                          </SelectTrigger>
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Phone <span className="text-red-400">*</span></Label>
+                      <div className="flex gap-2 mt-1">
+                        <Select value={form.countryCode} onValueChange={(v) => set('countryCode', v)}>
+                          <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white w-24"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="+1">+1 (US)</SelectItem>
-                            <SelectItem value="+44">+44 (UK)</SelectItem>
-                            <SelectItem value="+1-876">+1-876 (JM)</SelectItem>
-                            <SelectItem value="+91">+91 (IN)</SelectItem>
-                            <SelectItem value="+86">+86 (CN)</SelectItem>
-                            <SelectItem value="+61">+61 (AU)</SelectItem>
+                            {['+1','+44','+1-876','+1-242','+1-246','+1-868'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <Input
-                          type="tel"
-                          value={bookingData.phone}
-                          onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
-                          className="bg-black border-zinc-700 text-white flex-1"
-                          placeholder="555-123-4567"
-                          required
-                        />
+                        <Input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} className={`flex-1 bg-zinc-800 border-zinc-700 text-white ${errors.phone ? 'border-red-500' : ''}`} placeholder="555-000-1234" />
                       </div>
+                      <FieldError field="phone" />
                     </div>
-
                     <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        T-Shirt Size
-                      </Label>
-                      <Select
-                        value={bookingData.tshirtSize}
-                        onValueChange={(value) => setBookingData({ ...bookingData, tshirtSize: value })}
-                      >
-                        <SelectTrigger className="bg-black border-zinc-700 text-white">
-                          <SelectValue placeholder="Select size" />
-                        </SelectTrigger>
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">T-Shirt Size <span className="text-red-400">*</span></Label>
+                      <Select value={form.tshirtSize} onValueChange={(v) => set('tshirtSize', v)}>
+                        <SelectTrigger className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.tshirtSize ? 'border-red-500' : ''}`}><SelectValue placeholder="Select size" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="XS">XS</SelectItem>
-                          <SelectItem value="S">S</SelectItem>
-                          <SelectItem value="M">M</SelectItem>
-                          <SelectItem value="L">L</SelectItem>
-                          <SelectItem value="XL">XL</SelectItem>
-                          <SelectItem value="XXL">XXL</SelectItem>
+                          {['XS','S','M','L','XL','XXL','3XL'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      <FieldError field="tshirtSize" />
                     </div>
+                  </div>
 
-                    {/* Second Guest Information - Only for Double Occupancy */}
-                    {bookingData.occupancy === 'double' && (
-                      <div className="border-t border-green-600/30 pt-6 mt-6">
-                        <h4 className="text-white font-black uppercase text-lg mb-4 flex items-center gap-2">
-                          <Users className="w-5 h-5 text-green-500" />
-                          Second Guest Information
-                        </h4>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                                First Name *
-                              </Label>
-                              <Input
-                                value={bookingData.guest2FirstName}
-                                onChange={(e) => setBookingData({ ...bookingData, guest2FirstName: e.target.value })}
-                                className="bg-black border-zinc-700 text-white"
-                                placeholder="Jane"
-                                required
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                                Last Name *
-                              </Label>
-                              <Input
-                                value={bookingData.guest2LastName}
-                                onChange={(e) => setBookingData({ ...bookingData, guest2LastName: e.target.value })}
-                                className="bg-black border-zinc-700 text-white"
-                                placeholder="Doe"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                              Email Address *
-                            </Label>
-                            <Input
-                              type="email"
-                              value={bookingData.guest2Email}
-                              onChange={(e) => setBookingData({ ...bookingData, guest2Email: e.target.value })}
-                              className="bg-black border-zinc-700 text-white"
-                              placeholder="jane@example.com"
-                              required
-                            />
-                          </div>
-
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                              Phone Number *
-                            </Label>
-                            <div className="flex gap-2">
-                              <Select
-                                value={bookingData.guest2CountryCode}
-                                onValueChange={(value) => setBookingData({ ...bookingData, guest2CountryCode: value })}
-                              >
-                                <SelectTrigger className="bg-black border-zinc-700 text-white w-24">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="+1">+1 (US)</SelectItem>
-                                  <SelectItem value="+44">+44 (UK)</SelectItem>
-                                  <SelectItem value="+1-876">+1-876 (JM)</SelectItem>
-                                  <SelectItem value="+91">+91 (IN)</SelectItem>
-                                  <SelectItem value="+86">+86 (CN)</SelectItem>
-                                  <SelectItem value="+61">+61 (AU)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Input
-                                type="tel"
-                                value={bookingData.guest2Phone}
-                                onChange={(e) => setBookingData({ ...bookingData, guest2Phone: e.target.value })}
-                                className="bg-black border-zinc-700 text-white flex-1"
-                                placeholder="555-987-6543"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                              T-Shirt Size
-                            </Label>
-                            <Select
-                              value={bookingData.guest2TshirtSize}
-                              onValueChange={(value) => setBookingData({ ...bookingData, guest2TshirtSize: value })}
-                            >
-                              <SelectTrigger className="bg-black border-zinc-700 text-white">
-                                <SelectValue placeholder="Select size" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="XS">XS</SelectItem>
-                                <SelectItem value="S">S</SelectItem>
-                                <SelectItem value="M">M</SelectItem>
-                                <SelectItem value="L">L</SelectItem>
-                                <SelectItem value="XL">XL</SelectItem>
-                                <SelectItem value="XXL">XXL</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                  {form.occupancy === 'double' && (
+                    <div className="pt-4 border-t border-zinc-800">
+                      <h3 className="text-white font-black text-lg uppercase mb-4">Roommate Information</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">First Name <span className="text-red-400">*</span></Label>
+                          <Input value={form.guest2FirstName} onChange={(e) => set('guest2FirstName', e.target.value)} className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.guest2FirstName ? 'border-red-500' : ''}`} placeholder="Jane" />
+                          <FieldError field="guest2FirstName" />
+                        </div>
+                        <div>
+                          <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Last Name <span className="text-red-400">*</span></Label>
+                          <Input value={form.guest2LastName} onChange={(e) => set('guest2LastName', e.target.value)} className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.guest2LastName ? 'border-red-500' : ''}`} placeholder="Doe" />
+                          <FieldError field="guest2LastName" />
                         </div>
                       </div>
-                    )}
-
-                    <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Bed Preference
-                      </Label>
-                      <Select
-                        value={bookingData.bedPreference}
-                        onValueChange={(value) => setBookingData({ ...bookingData, bedPreference: value })}
-                      >
-                        <SelectTrigger className="bg-black border-zinc-700 text-white">
-                          <SelectValue placeholder="Select preference" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="king">King</SelectItem>
-                          <SelectItem value="double">Double Beds</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="mt-3">
+                        <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Email <span className="text-red-400">*</span></Label>
+                        <Input type="email" value={form.guest2Email} onChange={(e) => set('guest2Email', e.target.value)} className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.guest2Email ? 'border-red-500' : ''}`} placeholder="roommate@[example.com](https://example.com)" />
+                        <FieldError field="guest2Email" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Phone <span className="text-red-400">*</span></Label>
+                          <div className="flex gap-2 mt-1">
+                            <Select value={form.guest2CountryCode} onValueChange={(v) => set('guest2CountryCode', v)}>
+                              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white w-24"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {['+1','+44','+1-876','+1-242','+1-246','+1-868'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Input type="tel" value={form.guest2Phone} onChange={(e) => set('guest2Phone', e.target.value)} className={`flex-1 bg-zinc-800 border-zinc-700 text-white ${errors.guest2Phone ? 'border-red-500' : ''}`} placeholder="555-000-5678" />
+                          </div>
+                          <FieldError field="guest2Phone" />
+                        </div>
+                        <div>
+                          <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">T-Shirt Size <span className="text-red-400">*</span></Label>
+                          <Select value={form.guest2TshirtSize} onValueChange={(v) => set('guest2TshirtSize', v)}>
+                            <SelectTrigger className={`mt-1 bg-zinc-800 border-zinc-700 text-white ${errors.guest2TshirtSize ? 'border-red-500' : ''}`}><SelectValue placeholder="Select size" /></SelectTrigger>
+                            <SelectContent>
+                              {['XS','S','M','L','XL','XXL','3XL'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <FieldError field="guest2TshirtSize" />
+                        </div>
+                      </div>
                     </div>
+                  )}
 
+                  <div className="pt-4 border-t border-zinc-800 space-y-3">
+                    <h3 className="text-zinc-400 font-black text-xs uppercase tracking-wide">Optional Details</h3>
+                    {form.occupancy === 'double' && (
+                      <div>
+                        <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Bed Preference</Label>
+                        <Select value={form.bedPreference} onValueChange={(v) => set('bedPreference', v)}>
+                          <SelectTrigger className="mt-1 bg-zinc-800 border-zinc-700 text-white"><SelectValue placeholder="No preference" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="two-beds">Two Beds</SelectItem>
+                            <SelectItem value="king">King Bed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Referred By
-                      </Label>
-                      <Select
-                        value={bookingData.referredBy}
-                        onValueChange={(value) => setBookingData({ ...bookingData, referredBy: value })}
-                      >
-                        <SelectTrigger className="bg-black border-zinc-700 text-white">
-                          <SelectValue placeholder="How did you hear about us?" />
-                        </SelectTrigger>
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Referred By</Label>
+                      <Select value={form.referredBy} onValueChange={(v) => set('referredBy', v)}>
+                        <SelectTrigger className="mt-1 bg-zinc-800 border-zinc-700 text-white"><SelectValue placeholder="How did you hear about us?" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="gfx">GFX</SelectItem>
                           <SelectItem value="social-media">Social Media</SelectItem>
-                          <SelectItem value="friend">Friend</SelectItem>
+                          <SelectItem value="friend">Friend / Word of Mouth</SelectItem>
                           <SelectItem value="previous-attendee">Previous Attendee</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Celebrating a Birthday?
-                      </Label>
-                      <Select
-                        value={bookingData.celebratingBirthday}
-                        onValueChange={(value) => setBookingData({ ...bookingData, celebratingBirthday: value })}
-                      >
-                        <SelectTrigger className="bg-black border-zinc-700 text-white">
-                          <SelectValue placeholder="Select option" />
-                        </SelectTrigger>
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Celebrating a Birthday?</Label>
+                      <Select value={form.celebratingBirthday} onValueChange={(v) => set('celebratingBirthday', v)}>
+                        <SelectTrigger className="mt-1 bg-zinc-800 border-zinc-700 text-white"><SelectValue placeholder="No" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
                           <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="guest1">Yes — Mine!</SelectItem>
+                          {form.occupancy === 'double' && <SelectItem value="guest2">Yes — My Roommate's!</SelectItem>}
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div>
-                      <Label className="text-white font-bold mb-2 block uppercase text-sm">
-                        Notes to Organizer
-                      </Label>
-                      <textarea
-                        value={bookingData.notes}
-                        onChange={(e) => setBookingData({ ...bookingData, notes: e.target.value })}
-                        className="w-full bg-black border border-zinc-700 text-white rounded-md px-3 py-2 min-h-[80px]"
-                        placeholder="Any special requests or notes..."
-                      />
+                      <Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Notes / Special Requests</Label>
+                      <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)}
+                        className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-md px-3 py-2 min-h-[70px] text-sm"
+                        placeholder="Anything we should know?" />
                     </div>
+                  </div>
 
-                    <div className="border-t border-zinc-800 pt-4 mt-4">
-                      <h4 className="text-white font-bold uppercase text-sm mb-4">Arrival Information</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <Label className="text-white font-bold mb-2 block uppercase text-xs">
-                            Airline
-                          </Label>
-                          <Input
-                            value={bookingData.arrivalAirline}
-                            onChange={(e) => setBookingData({ ...bookingData, arrivalAirline: e.target.value })}
-                            className="bg-black border-zinc-700 text-white"
-                            placeholder="e.g., Delta"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
-                              Date
-                            </Label>
-                            <Input
-                              type="date"
-                              value={bookingData.arrivalDate}
-                              onChange={(e) => setBookingData({ ...bookingData, arrivalDate: e.target.value })}
-                              className="bg-black border-zinc-700 text-white"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
-                              Time
-                            </Label>
-                            <Input
-                              type="time"
-                              value={bookingData.arrivalTime}
-                              onChange={(e) => setBookingData({ ...bookingData, arrivalTime: e.target.value })}
-                              className="bg-black border-zinc-700 text-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                  <div className="pt-4 border-t border-zinc-800">
+                    <h3 className="text-zinc-400 font-black text-xs uppercase tracking-wide mb-1">Travel Information</h3>
+                    <p className="text-zinc-500 text-xs mb-3">You can fill this in later if you haven't booked flights yet.</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Arrival Airline</Label><Input value={form.arrivalAirline} onChange={(e) => set('arrivalAirline', e.target.value)} className="mt-1 bg-zinc-800 border-zinc-700 text-white" placeholder="e.g. Delta" /></div>
+                      <div><Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Arrival Date</Label><Input type="date" value={form.arrivalDate} onChange={(e) => set('arrivalDate', e.target.value)} className="mt-1 bg-zinc-800 border-zinc-700 text-white" /></div>
+                      <div><Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Arrival Time</Label><Input type="time" value={form.arrivalTime} onChange={(e) => set('arrivalTime', e.target.value)} className="mt-1 bg-zinc-800 border-zinc-700 text-white" /></div>
                     </div>
-
-                    <div className="border-t border-zinc-800 pt-4">
-                      <h4 className="text-white font-bold uppercase text-sm mb-4">Departure Information</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <Label className="text-white font-bold mb-2 block uppercase text-xs">
-                            Airline
-                          </Label>
-                          <Input
-                            value={bookingData.departureAirline}
-                            onChange={(e) => setBookingData({ ...bookingData, departureAirline: e.target.value })}
-                            className="bg-black border-zinc-700 text-white"
-                            placeholder="e.g., United"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
-                              Date
-                            </Label>
-                            <Input
-                              type="date"
-                              value={bookingData.departureDate}
-                              onChange={(e) => setBookingData({ ...bookingData, departureDate: e.target.value })}
-                              className="bg-black border-zinc-700 text-white"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-white font-bold mb-2 block uppercase text-xs">
-                              Time
-                            </Label>
-                            <Input
-                              type="time"
-                              value={bookingData.departureTime}
-                              onChange={(e) => setBookingData({ ...bookingData, departureTime: e.target.value })}
-                              className="bg-black border-zinc-700 text-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-3 gap-3 mt-3">
+                      <div><Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Departure Airline</Label><Input value={form.departureAirline} onChange={(e) => set('departureAirline', e.target.value)} className="mt-1 bg-zinc-800 border-zinc-700 text-white" placeholder="e.g. Delta" /></div>
+                      <div><Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Departure Date</Label><Input type="date" value={form.departureDate} onChange={(e) => set('departureDate', e.target.value)} className="mt-1 bg-zinc-800 border-zinc-700 text-white" /></div>
+                      <div><Label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Departure Time</Label><Input type="time" value={form.departureTime} onChange={(e) => set('departureTime', e.target.value)} className="mt-1 bg-zinc-800 border-zinc-700 text-white" /></div>
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* Step 4: Summary */}
+              {/* STEP 4 — Confirm & Pay */}
               {step === 4 && (
-                <motion.div
-                  key="step4"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <h3 className="text-white font-black text-xl uppercase mb-4">
-                    Booking Summary
-                  </h3>
-
-                  <div className="bg-black rounded-lg p-6 space-y-4 border border-zinc-800">
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Guest Name</span>
+                <motion.div key="s4" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-5">
+                  <h3 className="text-white font-black text-lg uppercase">Confirm & Pay</h3>
+                  <div className="bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden">
+                    <div className="bg-red-600 px-4 py-2"><p className="text-white font-black text-xs uppercase tracking-widest">Booking Summary</p></div>
+                    <div className="p-4 space-y-2 text-sm">
+                      {[
+                        ['Trip', trip?.name || 'Lost In Jamaica'],
+                        ['Hotel', trip?.hotel || 'Royalton Blue Waters'],
+                        ['Dates', trip ? `${trip.start_date} – ${trip.end_date}` : ''],
+                        ['Package', packageName()],
+                        ['Nights', form.nights],
+                        ['Occupancy', form.occupancy === 'double' ? 'Double' : 'Single'],
+                        ['Guest', `${form.firstName} ${form.lastName}`],
+                        form.occupancy === 'double' ? ['Roommate', `${form.guest2FirstName} ${form.guest2LastName}`] : null,
+                      ].filter(Boolean).map(([label, val]) => (
+                        <div key={label} className="flex justify-between">
+                          <span className="text-zinc-400">{label}</span>
+                          <span className="text-white font-bold">{val}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-zinc-700 pt-2 flex justify-between">
+                        <span className="text-white font-black">Total Price</span>
+                        <span className="text-red-500 font-black text-lg">${totalPrice().toLocaleString()}</span>
                       </div>
-                      <span className="text-white font-bold">{bookingData.firstName} {bookingData.lastName}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Email</span>
-                      </div>
-                      <span className="text-white font-bold">{bookingData.email}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <Phone className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Phone</span>
-                      </div>
-                      <span className="text-white font-bold">{bookingData.countryCode} {bookingData.phone}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Package</span>
-                      </div>
-                      <span className="text-white font-bold">{getPackageName()}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Duration</span>
-                      </div>
-                      <span className="text-white font-bold">
-                        {bookingData.nights} Nights ({bookingData.nights === '3' ? 'Fri-Mon' : 'Thu-Mon'})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Occupancy</span>
-                      </div>
-                      <span className="text-white font-bold">
-                        {bookingData.occupancy === 'single' ? 'Single' : 'Double'} ({bookingData.guests} {bookingData.guests === 1 ? 'Guest' : 'Guests'})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <DollarSign className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-400">Price Per Person</span>
-                      </div>
-                      <span className="text-white font-bold">${getPrice().toLocaleString()}</span>
                     </div>
                   </div>
 
-                  {/* Payment Selection */}
-                  <div className="mt-6 space-y-4">
-                    <h4 className="text-white font-black uppercase text-lg">
-                      Choose Payment Option
-                    </h4>
-
-                    {/* Full Payment */}
-                    <div
-                      onClick={() =>
-                        setBookingData({ ...bookingData, paymentOption: 'full' })
-                      }
-                      className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentOption === 'full'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="text-white font-black text-lg">
-                            Pay In Full
-                          </h5>
-                          <p className="text-gray-400 text-sm">
-                            Secure your spot today with full payment.
-                          </p>
-                        </div>
-                        <div className="text-yellow-400 font-black text-xl">
-                          ${getTotalPrice().toLocaleString()}
+                  <div>
+                    <p className="text-white font-black text-sm uppercase tracking-wide mb-3">Payment Option <span className="text-red-400">*</span></p>
+                    <div className="space-y-3">
+                      <div onClick={() => set('paymentOption', 'full')}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${form.paymentOption === 'full' ? 'border-red-600 bg-red-600/10' : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-500'}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${form.paymentOption === 'full' ? 'border-red-600 bg-red-600' : 'border-zinc-600'}`}>
+                              {form.paymentOption === 'full' && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <div>
+                              <p className="text-white font-black">Pay in Full</p>
+                              <p className="text-zinc-400 text-xs">One-time payment — done!</p>
+                            </div>
+                          </div>
+                          <p className="text-red-500 font-black">${totalPrice().toLocaleString()}</p>
                         </div>
                       </div>
-                    </div>
 
-                  {/* Payment Plan */}
-                  {isPaymentPlanAvailable() && (
-                    <div
-                      onClick={() =>
-                        setBookingData({ ...bookingData, paymentOption: 'plan' })
-                      }
-                      className={`p-5 rounded-lg border-2 cursor-pointer transition-all ${
-                        bookingData.paymentOption === 'plan'
-                          ? 'border-green-600 bg-green-600/10'
-                          : 'border-zinc-700 hover:border-zinc-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h5 className="text-white font-black text-lg">
-                            Payment Plan
-                          </h5>
-                          <p className="text-gray-400 text-sm">
-                            ${(trip?.deposit_per_person || 250).toLocaleString()} deposit per person today. 
-                            Remaining balance split into fixed monthly payments.
-                          </p>
+                      {isPaymentPlanAvailable() ? (
+                        <div onClick={() => set('paymentOption', 'plan')}
+                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${form.paymentOption === 'plan' ? 'border-red-600 bg-red-600/10' : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-500'}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${form.paymentOption === 'plan' ? 'border-red-600 bg-red-600' : 'border-zinc-600'}`}>
+                                {form.paymentOption === 'plan' && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                              <div>
+                                <p className="text-white font-black">Installment Plan</p>
+                                <p className="text-zinc-400 text-xs">Pay deposit today, rest on scheduled dates</p>
+                              </div>
+                            </div>
+                            <p className="text-red-500 font-black">${depositAmount().toLocaleString()} <span className="text-zinc-500 text-xs">today</span></p>
+                          </div>
+                          {form.paymentOption === 'plan' && (
+                            <div className="mt-3 pt-3 border-t border-zinc-700 space-y-1 text-xs text-zinc-400">
+                              <p className="flex items-start gap-1"><Info className="w-3 h-3 mt-0.5 flex-shrink-0 text-red-500" /> Remaining <strong className="text-white">${(totalPrice() - depositAmount()).toLocaleString()}</strong> charged automatically on scheduled dates.</p>
+                              <p className="flex items-start gap-1"><Info className="w-3 h-3 mt-0.5 flex-shrink-0 text-red-500" /> All balances due by <strong className="text-white">{trip?.balance_due_date}</strong>.</p>
+                              <p className="flex items-start gap-1"><AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0 text-yellow-500" /> Failed payments incur a <strong className="text-yellow-400">$30 retry fee</strong>.</p>
+                            </div>
+                          )}
                         </div>
-                        <div className="text-yellow-400 font-black text-xl">
-                          ${getDepositAmount().toLocaleString()} Due Today
+                      ) : (
+                        <div className="p-4 rounded-xl border-2 border-zinc-800 bg-zinc-800/30 opacity-60">
+                          <div className="flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 text-zinc-500" />
+                            <div>
+                              <p className="text-zinc-400 font-black">Installment Plan Unavailable</p>
+                              <p className="text-zinc-500 text-xs">The payment plan deadline has passed. Full payment required.</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  )}
-
-                  {trip && !isPaymentPlanAvailable() && (
-                    <div className="text-sm text-red-400 mt-2">
-                      Payment plans are no longer available for this trip.
-                    </div>
-                  )}
-
-                  {/* Price Breakdown */}
-                  <div className="bg-black rounded-lg p-6 space-y-3 border border-zinc-800 mt-6">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Subtotal</span>
-                      <span className="text-white font-bold">
-                        ${getBaseAmountDueToday().toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Taxes & Fees</span>
-                      <span className="text-white font-bold">
-                        ${getProcessingFee().toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-zinc-800 pt-3">
-                      <span className="text-white font-black text-xl uppercase">
-                        Total Due Today
-                      </span>
-                      <span className="text-yellow-400 font-black text-2xl">
-                        ${getGrossAmountDueToday().toLocaleString()}
-                      </span>
-                    </div>
+                    {errors.paymentOption && <p className="text-red-400 text-xs mt-1">{errors.paymentOption}</p>}
                   </div>
-                  <div className="bg-green-600/10 border border-green-600/30 rounded-lg p-4">
-                    <p className="text-white text-sm">
-                      <span className="font-black">What's Included:</span> Airport shuttle, all-inclusive accommodations, 
-                      entry to all weekend events, resort amenities, and more!
-                    </p>
+
+                  <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700 text-xs text-zinc-400 space-y-1">
+                    <p className="font-bold text-zinc-300 uppercase tracking-wide text-xs mb-2">Cancellation Policy</p>
+                    <p>• Deposits are <strong className="text-white">NON-REFUNDABLE</strong> but apply to your total if you attend.</p>
+                    <p>• <strong className="text-white">No refund</strong> if cancelled within 60 days of trip.</p>
+                    <p>• <strong className="text-white">50% refund</strong> if cancelled 90+ days before trip start.</p>
                   </div>
-                  </div>
+                  <p className="text-zinc-500 text-xs text-center">By clicking below you agree to the cancellation policy and payment terms.</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-zinc-800">
-              <Button
-                onClick={step === 1 ? onClose : handleBack}
-                variant="outline"
-                className="border-zinc-700 text-white hover:bg-zinc-800"
-                disabled={isSubmitting}
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                {step === 1 ? 'Cancel' : 'Back'}
+            <div className="flex justify-between mt-8 pt-4 border-t border-zinc-800">
+              <Button variant="outline" onClick={step === 1 ? onClose : handleBack} className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800">
+                <ChevronLeft className="w-4 h-4 mr-1" />{step === 1 ? 'Cancel' : 'Back'}
               </Button>
-
               {step < 4 ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={!canProceed()}
-                  className="bg-green-600 hover:bg-green-700 text-white font-black uppercase"
-                >
-                  Continue
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                <Button onClick={handleNext} className="bg-red-600 hover:bg-red-700 text-white font-black px-8">
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               ) : (
-                <Button
-                  onClick={handleBookNow}
-                  disabled={isSubmitting}
-                  className="bg-green-600 hover:bg-green-700 text-white font-black uppercase px-8"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Confirming Booking...
-                    </>
-                  ) : (
-                    <>
-                      Confirm Booking
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-red-600 hover:bg-red-700 text-white font-black px-8">
+                  {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</> : <>Proceed to Payment <ChevronRight className="w-4 h-4 ml-1" /></>}
                 </Button>
               )}
             </div>
