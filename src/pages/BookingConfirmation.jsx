@@ -52,7 +52,9 @@ export default function BookingConfirmation() {
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-400">Status</span>
-              <span className="text-green-400 font-bold capitalize">{booking.status}</span>
+              <span className="text-green-400 font-bold">
+                {booking.status === 'active_plan' ? 'Active Plan' : booking.status === 'paid' ? 'Paid' : booking.status}
+              </span>
             </div>
           </div>
         )}
