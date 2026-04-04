@@ -33,6 +33,9 @@ function AdminBookings() {
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
+  const [isEditingFinancials, setIsEditingFinancials] = useState(false);
+  const [financialForm, setFinancialForm] = useState({});
+
   const [cancelReason, setCancelReason] = useState('');
   const [isCanceling, setIsCanceling] = useState(false);
 
@@ -119,6 +122,27 @@ function AdminBookings() {
   };
 
   const ef = (key, val) => setEditForm((f) => ({ ...f, [key]: val }));
+
+  const startEditingFinancials = () => {
+    setFinancialForm({
+      total_price_cents: selectedBooking.total_price_cents || 0,
+      amount_paid_cents: selectedBooking.amount_paid_cents || 0,
+      deposit_amount_cents: selectedBooking.deposit_amount_cents || 0,
+    });
+    setIsEditingFinancials(true);
+  };
+
+  const handleSaveFinancials = async () => {
+    try {
+      const updated = await base44.entities.Booking.update(selectedBooking.id, financialForm);
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      setSelectedBooking(updated);
+      setIsEditingFinancials(false);
+      toast.success('Financials updated');
+    } catch (err) {
+      toast.error('Failed to update financials');
+    }
+  };
 
   const handleSaveEdit = async () => {
     setIsSaving(true);
@@ -326,7 +350,7 @@ function AdminBookings() {
       </div>
 
       {/* ── Details / Edit Dialog ── */}
-      <Dialog open={showDetailsDialog} onOpenChange={(open) => { setShowDetailsDialog(open); if (!open) setIsEditing(false); }}>
+      <Dialog open={showDetailsDialog} onOpenChange={(open) => { setShowDetailsDialog(open); if (!open) { setIsEditing(false); setIsEditingFinancials(false); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between pr-6">
@@ -368,16 +392,42 @@ function AdminBookings() {
                 <Row label="Status" value={getStatusBadge(selectedBooking.status)} />
               </Section>
 
-              <Section title="Financials">
-                <Row label="Total" value={formatCurrency(selectedBooking.total_price_cents)} />
-                <Row label="Paid" value={formatCurrency(selectedBooking.amount_paid_cents)} />
-                <Row label="Deposit" value={formatCurrency(selectedBooking.deposit_amount_cents)} />
-                <Row label="Balance Due" value={formatCurrency((selectedBooking.total_price_cents || 0) - (selectedBooking.amount_paid_cents || 0))} />
-                {selectedBooking.refund_amount_cents && (
-                  <Row label="Refunded" value={`${formatCurrency(selectedBooking.refund_amount_cents)} via ${selectedBooking.refund_method} on ${selectedBooking.refund_date}`} />
-                )}
-                {selectedBooking.refund_notes && (
-                  <Row label="Refund Notes" value={selectedBooking.refund_notes} />
+              <Section
+                title="Financials"
+                action={
+                  !isEditing && selectedBooking?.status !== 'canceled' && (
+                    <button
+                      onClick={startEditingFinancials}
+                      className="text-xs text-blue-600 hover:underline font-bold uppercase"
+                    >
+                      Adjust
+                    </button>
+                  )
+                }
+              >
+                {!isEditingFinancials ? (
+                  <>
+                    <Row label="Total" value={formatCurrency(selectedBooking.total_price_cents)} />
+                    <Row label="Paid" value={formatCurrency(selectedBooking.amount_paid_cents)} />
+                    <Row label="Deposit" value={formatCurrency(selectedBooking.deposit_amount_cents)} />
+                    <Row label="Balance Due" value={formatCurrency((selectedBooking.total_price_cents || 0) - (selectedBooking.amount_paid_cents || 0))} />
+                    {selectedBooking.refund_amount_cents && (
+                      <Row label="Refunded" value={`${formatCurrency(selectedBooking.refund_amount_cents)} via ${selectedBooking.refund_method} on ${selectedBooking.refund_date}`} />
+                    )}
+                    {selectedBooking.refund_notes && (
+                      <Row label="Refund Notes" value={selectedBooking.refund_notes} />
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <EditRow label="Total Price ($)" value={(financialForm.total_price_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, total_price_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
+                    <EditRow label="Amount Paid ($)" value={(financialForm.amount_paid_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, amount_paid_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
+                    <EditRow label="Deposit ($)" value={(financialForm.deposit_amount_cents / 100).toFixed(2)} onChange={(v) => setFinancialForm(f => ({ ...f, deposit_amount_cents: Math.round(parseFloat(v) * 100) || 0 }))} />
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setIsEditingFinancials(false)}>Cancel</Button>
+                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={handleSaveFinancials}>Save</Button>
+                    </div>
+                  </>
                 )}
               </Section>
 
@@ -560,10 +610,13 @@ function AdminBookings() {
 
 // ── Helper UI Components ──────────────────────────────────────────────────────
 
-function Section({ title, children }) {
+function Section({ title, action, children }) {
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">{title}</p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-black uppercase tracking-widest text-gray-400">{title}</p>
+        {action && action}
+      </div>
       <div className="space-y-2">{children}</div>
     </div>
   );
