@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
         from: 'info@gfxcursions.com <noreply@mail-gfxcursions.net>',
         to: recipientEmail,
         subject,
-        html: body,
+        text: body,
       }),
     });
 
