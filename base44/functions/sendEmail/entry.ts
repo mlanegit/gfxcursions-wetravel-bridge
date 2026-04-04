@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Lost in Jamaica <onboarding@resend.dev>',
+        from: 'info@gfxcursions.com',
         to: recipientEmail,
         subject,
         html: body,
