@@ -457,16 +457,16 @@ function AdminBookings() {
                     <Row label="Status" value={getStatusBadge(selectedBooking.status)} />
                   </Section>
 
-                  {(selectedBooking.arrival_airline || selectedBooking.departure_airline) && (
-                    <Section title="Travel">
-                      {selectedBooking.arrival_airline && (
-                        <Row label="Arrival" value={`${selectedBooking.arrival_airline} — ${selectedBooking.arrival_date} ${selectedBooking.arrival_time}`} />
-                      )}
-                      {selectedBooking.departure_airline && (
-                        <Row label="Departure" value={`${selectedBooking.departure_airline} — ${selectedBooking.departure_date} ${selectedBooking.departure_time}`} />
-                      )}
-                    </Section>
-                  )}
+                  <Section title="Travel">
+                    {selectedBooking.arrival_airline ? (
+                      <Row label="Arrival" value={`${selectedBooking.arrival_airline} — ${selectedBooking.arrival_date} ${selectedBooking.arrival_time}`} />
+                    ) : (
+                      <p className="text-sm text-gray-400">No arrival info on file</p>
+                    )}
+                    {selectedBooking.departure_airline && (
+                      <Row label="Departure" value={`${selectedBooking.departure_airline} — ${selectedBooking.departure_date} ${selectedBooking.departure_time}`} />
+                    )}
+                  </Section>
 
                   {selectedBooking.notes && (
                     <Section title="Notes">
