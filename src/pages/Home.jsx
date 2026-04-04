@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '@/utils';
+import { createPageUrl } from '../utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Calendar, Users, Music, Waves, Gift, Bus, Star } from 'lucide-react';
+import { Calendar, Music, Waves, Gift, Bus, Star } from 'lucide-react';
 import BookingWizard from '../components/BookingWizard';
 
 export default function Home() {
   const [showBookingWizard, setShowBookingWizard] = useState(false);
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
-  
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState('');
+
   const highlights = [
     { icon: Calendar, text: '5 Days / 4 Nights' },
     { icon: Music, text: 'Celebrity DJs & Hosts' },
@@ -33,8 +32,31 @@ export default function Home() {
     'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=400&h=300&fit=crop',
   ];
 
+  const handleAdminLogin = async () => {
+    if (!adminEmail || !adminPassword) {
+      setAdminError('Please enter your email and password.');
+      return;
+    }
+    setAdminLoading(true);
+    setAdminError('');
+    try {
+      const { User } = await import('@/api/entities');
+      const users = await User.filter({ email: adminEmail });
+      if (users.length > 0 && users[0].role === 'admin') {
+        window.location.href = createPageUrl('AdminDashboard');
+      } else {
+        setAdminError('Access denied. Admin accounts only.');
+      }
+    } catch (err) {
+      setAdminError('Unable to verify credentials.');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black">
+
       {/* Previous Trips Banner */}
       <section className="bg-zinc-900 py-8 border-b border-green-600/30">
         <div className="max-w-7xl mx-auto px-6">
@@ -44,8 +66,8 @@ export default function Home() {
           <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
             {previousTripImages.map((img, idx) => (
               <div key={idx} className="relative overflow-hidden rounded aspect-square group">
-                <img 
-                  src={img} 
+                <img
+                  src={img}
                   alt={`Previous trip ${idx + 1}`}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
@@ -58,21 +80,21 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative">
-        {user?.role === "admin" && (
-          <div className="absolute top-6 right-6 z-20">
-            <Button
-              onClick={() => window.location.href = createPageUrl('AdminDashboard')}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase"
-            >
-              Admin
-            </Button>
-          </div>
-        )}
-        
+
+        {/* Admin Button — always visible */}
+        <div className="absolute top-6 right-6 z-20">
+          <Button
+            onClick={() => { setShowAdminLogin(true); setAdminError(''); }}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase"
+          >
+            Admin
+          </Button>
+        </div>
+
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
-          <img 
-            src="https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1920&h=1080&fit=crop" 
+          <img
+            src="https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1920&h=1080&fit=crop"
             alt="Luxury resort beach"
             className="w-full h-full object-cover opacity-40"
           />
@@ -96,7 +118,7 @@ export default function Home() {
             <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
               Presented by GFX
             </p>
-            <Button 
+            <Button
               onClick={() => setShowBookingWizard(true)}
               className="bg-green-600 hover:bg-green-700 text-white font-black px-12 py-7 text-xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all"
             >
@@ -117,18 +139,10 @@ export default function Home() {
       <section className="sticky top-16 z-40 bg-green-600 border-y border-green-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-center gap-8 flex-wrap">
-            <a href="#whats-included" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">
-              What's Included
-            </a>
-            <a href="#packages" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">
-              Packages
-            </a>
-            <a href="#events" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">
-              Events
-            </a>
-            <a href="#location" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">
-              Location
-            </a>
+            <a href="#whats-included" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">What's Included</a>
+            <a href="#packages" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">Packages</a>
+            <a href="#events" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">Events</a>
+            <a href="#location" className="text-white font-bold uppercase text-sm hover:text-black transition-colors">Location</a>
           </div>
         </div>
       </section>
@@ -139,15 +153,9 @@ export default function Home() {
           <h2 className="text-5xl md:text-6xl font-black text-white text-center mb-16 tracking-tight">
             WHAT'S <span className="text-yellow-400">INCLUDED</span>
           </h2>
-          
           <div className="grid md:grid-cols-3 gap-6">
             {highlights.map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-              >
+              <motion.div key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
                 <Card className="bg-zinc-900 border-green-600/30 hover:border-green-600 transition-all group">
                   <CardContent className="pt-8 pb-6 text-center">
                     <div className="bg-green-600 w-16 h-16 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
@@ -159,7 +167,6 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
-
           <div className="mt-12 grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
             <Card className="bg-green-600 border-green-700">
               <CardContent className="pt-6">
@@ -192,21 +199,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="relative rounded-xl overflow-hidden group">
-              <img 
-                src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop" 
-                alt="Resort pool party"
-                className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
+              <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop" alt="Resort pool party" className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6">
                 <h3 className="text-white font-black text-2xl">POOL PARTIES</h3>
               </div>
             </div>
             <div className="relative rounded-xl overflow-hidden group">
-              <img 
-                src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop" 
-                alt="Beach vibes"
-                className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
+              <img src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop" alt="Beach vibes" className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6">
                 <h3 className="text-white font-black text-2xl">BEACH SESSIONS</h3>
               </div>
@@ -222,57 +221,27 @@ export default function Home() {
             WHAT TRAVELERS <span className="text-yellow-400">SAY</span>
           </h2>
           <p className="text-center text-gray-400 mb-12 text-lg">From previous Lost in St. Lucia retreats</p>
-          
           <div className="grid md:grid-cols-3 gap-6">
-            <Card className="bg-black border-green-600/30">
-              <CardContent className="pt-6">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-300 mb-4 italic">
-                  "This was an amazing experience! The resort was beautiful, the events were well organized, and I met so many wonderful people. Already planning to come back next year!"
-                </p>
-                <p className="text-white font-bold">- Traveler Review</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-black border-green-600/30">
-              <CardContent className="pt-6">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-300 mb-4 italic">
-                  "Best group trip I've ever been on! The all-inclusive setup was perfect, the boat day was incredible, and the nightlife was unmatched. GFX knows how to throw a retreat!"
-                </p>
-                <p className="text-white font-bold">- Traveler Review</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-black border-green-600/30">
-              <CardContent className="pt-6">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-300 mb-4 italic">
-                  "From the moment we arrived until we left, everything was top tier. The food, entertainment, excursions - all exceeded expectations. Can't wait for Jamaica!"
-                </p>
-                <p className="text-white font-bold">- Traveler Review</p>
-              </CardContent>
-            </Card>
+            {[
+              "This was an amazing experience! The resort was beautiful, the events were well organized, and I met so many wonderful people. Already planning to come back next year!",
+              "Best group trip I've ever been on! The all-inclusive setup was perfect, the boat day was incredible, and the nightlife was unmatched. GFX knows how to throw a retreat!",
+              "From the moment we arrived until we left, everything was top tier. The food, entertainment, excursions - all exceeded expectations. Can't wait for Jamaica!"
+            ].map((quote, idx) => (
+              <Card key={idx} className="bg-black border-green-600/30">
+                <CardContent className="pt-6">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />)}
+                  </div>
+                  <p className="text-gray-300 mb-4 italic">"{quote}"</p>
+                  <p className="text-white font-bold">- Traveler Review</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-
           <div className="text-center mt-12">
             <div className="inline-flex items-center gap-3 bg-black border border-green-600/30 rounded-lg px-8 py-4">
               <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                ))}
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" />)}
               </div>
               <div className="text-left">
                 <p className="text-white font-black text-2xl">5.0 Rating</p>
@@ -292,7 +261,7 @@ export default function Home() {
           <p className="text-xl text-gray-300 mb-8">
             Limited spots available. Lock in your spot before it's too late.
           </p>
-          <Button 
+          <Button
             onClick={() => setShowBookingWizard(true)}
             className="bg-green-600 hover:bg-green-700 text-white font-black px-16 py-8 text-2xl rounded uppercase tracking-wider shadow-2xl hover:shadow-green-600/50 transition-all"
           >
@@ -306,8 +275,58 @@ export default function Home() {
         <BookingWizard
           tripSlug="lost-in-jamaica"
           onClose={() => setShowBookingWizard(false)}
-      />
-    )}
+        />
+      )}
+
+      {/* Admin Login Modal */}
+      {showAdminLogin && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-8 w-full max-w-sm shadow-2xl">
+            <h2 className="text-white font-black text-xl uppercase mb-1">Admin Access</h2>
+            <p className="text-zinc-400 text-sm mb-6">Sign in to manage your trips and bookings.</p>
+            {adminError && <p className="text-red-400 text-sm mb-4">{adminError}</p>}
+            <div className="space-y-4">
+              <div>
+                <label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Email</label>
+                <input
+                  type="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:border-red-600"
+                  placeholder="you@[example.com](https://example.com)"
+                />
+              </div>
+              <div>
+                <label className="text-gray-300 text-xs font-bold uppercase tracking-wide">Password</label>
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
+                  className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:border-red-600"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { setShowAdminLogin(false); setAdminError(''); }}
+                  className="flex-1 border border-zinc-700 text-zinc-300 hover:text-white rounded-md py-2 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAdminLogin}
+                  disabled={adminLoading}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-md py-2 text-sm font-black uppercase"
+                >
+                  {adminLoading ? 'Signing in...' : 'Sign In'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
