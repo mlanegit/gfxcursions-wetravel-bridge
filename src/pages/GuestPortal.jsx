@@ -56,7 +56,7 @@ export default function GuestPortal() {
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: async () => { try { return await [base44.auth.me](https://base44.auth.me)(); } catch { return null; } },
+    queryFn: async () => { try { return await base44.auth.me(); } catch { return null; } },
   });
 
   const { data: booking, isLoading: isLoadingBooking } = useQuery({
