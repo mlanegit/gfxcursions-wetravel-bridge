@@ -16,14 +16,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Missing bookingId" }, { status: 400 });
     }
 
-    // Load booking record
-    const booking = await base44.asServiceRole.entities.Booking.get(bookingId);
+    // Load booking record (use service role — booking may be anonymous)
+    const b44 = createClientFromRequest(req);
+    const booking = await b44.asServiceRole.entities.Booking.get(bookingId);
     if (!booking) {
       return Response.json({ error: "Booking not found" }, { status: 404 });
     }
 
     // Load trip to check processing_fee_enabled
-    const trips = await base44.asServiceRole.entities.Trip.filter({ id: booking.trip_id });
+    const trips = await b44.asServiceRole.entities.Trip.filter({ id: booking.trip_id });
     const trip = trips[0] || null;
 
     const paymentOption = booking.payment_option;
