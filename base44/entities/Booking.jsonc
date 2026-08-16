@@ -1,0 +1,248 @@
+{
+  "name": "Booking",
+  "type": "object",
+  "properties": {
+    "trip_id": {
+      "type": "string",
+      "description": "Reference to Trip ID"
+    },
+    "package_id": {
+      "type": "string",
+      "description": "Reference to TripPackage ID"
+    },
+    "payment_option": {
+      "type": "string",
+      "enum": [
+        "full",
+        "plan"
+      ],
+      "description": "Payment option selected by guest"
+    },
+    "guests": {
+      "type": "number",
+      "description": "Number of guests"
+    },
+    "total_price_cents": {
+      "type": "integer",
+      "description": "Total booking price in cents"
+    },
+    "deposit_amount_cents": {
+      "type": "integer",
+      "description": "Deposit amount paid or due in cents"
+    },
+    "stripe_customer_id": {
+      "type": "string",
+      "description": "Stripe customer ID"
+    },
+    "stripe_checkout_session_id": {
+      "type": "string",
+      "description": "Stripe checkout session ID"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string",
+      "description": "Stripe payment intent ID for full payments"
+    },
+    "stripe_subscription_schedule_id": {
+      "type": "string",
+      "description": "Stripe subscription schedule ID for payment plans"
+    },
+    "stripe_subscription_id": {
+      "type": "string",
+      "description": "Stripe subscription ID created from schedule"
+    },
+    "stripe_invoice_id": {
+      "type": "string",
+      "description": "Stripe invoice ID for plan charges"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "initiated",
+        "paid",
+        "active_plan",
+        "canceled",
+        "failed",
+        "past_due"
+      ],
+      "default": "initiated",
+      "description": "Booking status: initiated (created but not paid), paid (full payment successful), active_plan (deposit paid, plan scheduled), canceled (canceled/refunded/voided), failed (Stripe payment failed), past_due (payment plan invoice failed)"
+    },
+    "plan_installments_total": {
+      "type": "number",
+      "description": "Total number of installments for payment plan"
+    },
+    "plan_installments_remaining": {
+      "type": "number",
+      "description": "Number of remaining installments"
+    },
+    "plan_anchor_dates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "description": "Array of installment due dates (e.g., May 31, Jun 30)"
+    },
+    "plan_next_charge_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Next scheduled charge date for payment plan"
+    },
+    "plan_cutoff_applied": {
+      "type": "boolean",
+      "description": "Whether plan cutoff date was applied"
+    },
+    "first_name": {
+      "type": "string",
+      "description": "Guest's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Guest's last name"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Contact email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number with country code"
+    },
+    "tshirt_size": {
+      "type": "string",
+      "enum": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "description": "T-Shirt size"
+    },
+    "guest2_first_name": {
+      "type": "string",
+      "description": "Second guest's first name"
+    },
+    "guest2_last_name": {
+      "type": "string",
+      "description": "Second guest's last name"
+    },
+    "guest2_email": {
+      "type": "string",
+      "format": "email",
+      "description": "Second guest's email"
+    },
+    "guest2_phone": {
+      "type": "string",
+      "description": "Second guest's phone number with country code"
+    },
+    "guest2_tshirt_size": {
+      "type": "string",
+      "enum": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "description": "Second guest's T-Shirt size"
+    },
+    "bed_preference": {
+      "type": "string",
+      "enum": [
+        "king",
+        "double"
+      ],
+      "description": "Bed preference"
+    },
+    "referred_by": {
+      "type": "string",
+      "description": "How guest was referred"
+    },
+    "celebrating_birthday": {
+      "type": "string",
+      "enum": [
+        "yes",
+        "no"
+      ],
+      "description": "Celebrating a birthday"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes to the organizer"
+    },
+    "arrival_airline": {
+      "type": "string",
+      "description": "Arrival airline"
+    },
+    "arrival_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Arrival date"
+    },
+    "arrival_time": {
+      "type": "string",
+      "description": "Arrival time"
+    },
+    "departure_airline": {
+      "type": "string",
+      "description": "Departure airline"
+    },
+    "departure_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Departure date"
+    },
+    "departure_time": {
+      "type": "string",
+      "description": "Departure time"
+    },
+    "amount_paid_cents": {
+      "type": "integer",
+      "default": 0,
+      "description": "Amount paid so far in cents"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Payment due date"
+    },
+    "refund_amount_cents": {
+      "type": "integer",
+      "description": "Amount refunded in cents"
+    },
+    "refund_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date refund was processed"
+    },
+    "refund_method": {
+      "type": "string",
+      "enum": [
+        "credit_card",
+        "bank_transfer",
+        "check",
+        "cash",
+        "other"
+      ],
+      "description": "Method used for refund"
+    },
+    "refund_notes": {
+      "type": "string",
+      "description": "Additional notes about the refund"
+    }
+  },
+  "required": [
+    "trip_id",
+    "package_id",
+    "payment_option",
+    "guests",
+    "total_price_cents",
+    "first_name",
+    "last_name",
+    "email"
+  ]
+}

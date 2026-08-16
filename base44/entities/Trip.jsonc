@@ -1,0 +1,77 @@
+{
+  "name": "Trip",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "Unique URL-friendly identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "Trip name"
+    },
+    "location": {
+      "type": "string",
+      "description": "Trip location"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether trip is active"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Trip start date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Trip end date"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "Currency code"
+    },
+    "payment_plan_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether payment plans are available for this trip"
+    },
+    "plan_cutoff_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Last date to allow payment plans"
+    },
+    "plan_dates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "description": "Array of fixed installment due dates"
+    },
+    "deposit_per_person": {
+      "type": "number",
+      "default": 250,
+      "description": "Deposit required per guest for payment plan"
+    },
+    "installment_count": {
+      "type": "number",
+      "default": 4,
+      "description": "Number of installments after deposit"
+    },
+    "processing_fee_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether Stripe fees are passed to guest"
+    }
+  },
+  "required": [
+    "slug",
+    "name",
+    "start_date",
+    "end_date"
+  ]
+}

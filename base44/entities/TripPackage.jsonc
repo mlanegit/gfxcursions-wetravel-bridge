@@ -1,0 +1,47 @@
+{
+  "name": "TripPackage",
+  "type": "object",
+  "properties": {
+    "trip_id": {
+      "type": "string",
+      "description": "Reference to Trip ID"
+    },
+    "package_code": {
+      "type": "string",
+      "description": "Package identifier (e.g., luxury-suite, diamond-club)"
+    },
+    "label": {
+      "type": "string",
+      "description": "Display name for the package"
+    },
+    "nights": {
+      "type": "number",
+      "description": "Number of nights (e.g., 3 or 4)"
+    },
+    "occupancy": {
+      "type": "string",
+      "enum": [
+        "single",
+        "double"
+      ],
+      "description": "Room occupancy type"
+    },
+    "base_price": {
+      "type": "number",
+      "description": "Base price in USD"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this package is available"
+    }
+  },
+  "required": [
+    "trip_id",
+    "package_code",
+    "label",
+    "nights",
+    "occupancy",
+    "base_price"
+  ]
+}
