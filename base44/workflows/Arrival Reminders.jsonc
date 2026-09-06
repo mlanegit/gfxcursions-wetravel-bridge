@@ -1,0 +1,44 @@
+{
+  "name": "Arrival Reminders",
+  "description": "I will check all active bookings (status = 'paid' or 'active_plan') and look up their trip's start_date. If the trip starts in exactly 30 days and reminder_sent_30d is not true, I will send an arrival_reminder email using the sendEmail function and mark reminder_sent_30d as true on the booking. If the trip starts in exactly 7 days and reminder_sent_7d is not true, I will send an arrival_reminder email and mark reminder_sent_7d as true on the booking.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 13 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "arrival_reminders",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "send_arrival_reminders",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "send_arrival_reminders"
+  }
+}
